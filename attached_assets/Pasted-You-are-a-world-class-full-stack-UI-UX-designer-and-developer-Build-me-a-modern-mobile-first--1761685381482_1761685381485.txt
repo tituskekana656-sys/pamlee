@@ -1,0 +1,63 @@
+You are a world-class full-stack UI/UX designer and developer.  
+Build me a **modern, mobile-first bakery web app** named **Pam_Lee’s Kitchen**, cloned in look, feel, and functionality from **Dis-Chem’s website** — but rebranded for a local bakery.  
+
+🎯 GOAL:
+- Build a full-stack, visually stunning, and fast e-commerce web app.
+- Include a **welcoming login/signup page** (first page users see).
+- After successful login, automatically redirect users to the **homepage**.
+- Use elegant visuals, bakery images, and smooth animations.
+
+🏗️ STRUCTURE:
+- Login / Signup page
+- Homepage (featured items, mission, call-to-action)
+- Menu page (filterable products with images & prices)
+- Order page (form + payment gateway placeholder)
+- Order tracking page
+- Specials & promotions page
+- Gallery page (images in lightbox)
+- Contact page (form + map + social links)
+- Admin page (manage orders, products, specials)
+
+🎨 DESIGN SYSTEM:
+- Colors: Gold (#D4AF37), Black (#000000), White (#FFFFFF)
+- Font pairing: Playfair Display (headings), Poppins (body)
+- Style: “Luxury bakery meets modern e-commerce”
+- Elements: Buttons with gold hover glow, rounded corners, parallax hero banners
+- Include high-quality placeholder bakery images, logos, and icons.
+
+💻 TECH STACK:
+- Next.js (App Router) + Tailwind CSS
+- Authentication with NextAuth.js (email/password)
+- Database: PostgreSQL or Supabase (mock for now)
+- Hosting: Vercel
+- Use `public/images/` for visuals.
+
+🔄 FUNCTIONAL FLOW:
+1️⃣ When user visits site → show login/signup page  
+2️⃣ On successful login → redirect to `/home`  
+3️⃣ From homepage → navigate to menu, order, etc.  
+4️⃣ Include navbar, footer, and consistent design.
+
+🎨 REQUIREMENTS:
+- Beautiful hero banner with bakery background.
+- Reusable components (Navbar, Footer, ProductCard).
+- Responsive (mobile-first).
+- Smooth fade-in transitions & hover effects.
+
+🧩 OUTPUT:
+- Fully functional Next.js project folder
+- Tailwind styling
+- Placeholder images for UI
+- Auto-redirect from login → home
+- Include code snippets and mock data for menu items.
+
+
+Business: Pam_Lee’s Kitchen
+Industry: Bakery & Pastry (Home-Based)
+Location: Giyani, Malamulele — Limpopo, South Africa
+Mission: Delight customers with fresh, homemade baked goods and friendly service.
+Vision: Become the leading bakery brand in the region through technology and customer experience.
+Contact:
+📞 0730528247 | 📧 phamelamageza@gmail.com
+
+🎵 TikTok: @PhamelaShimange | 📸 Instagram: @pamlee010 | 📘 Facebook: Pam_Lee’s Confectionary
