@@ -1,5 +1,7 @@
 
-import { storage } from "./storage";
+import { db } from "./db";
+import { users } from "@shared/schema";
+import { eq } from "drizzle-orm";
 
 async function makeAdmin() {
   // INSTRUCTIONS:
@@ -17,20 +19,21 @@ async function makeAdmin() {
       process.exit(1);
     }
     
-    const user = await storage.getUser(userId);
+    const [user] = await db.select().from(users).where(eq(users.id, userId));
+    
     if (!user) {
       console.log("❌ User not found");
       console.log("Available users:");
-      const allUsers = await storage.db.select().from(storage.schema.users);
+      const allUsers = await db.select().from(users);
       console.table(allUsers.map(u => ({ id: u.id, email: u.email, isAdmin: u.isAdmin })));
       return;
     }
     
     // Update user to be admin
-    await storage.db
-      .update(storage.schema.users)
+    await db
+      .update(users)
       .set({ isAdmin: true })
-      .where(storage.eq(storage.schema.users.id, userId));
+      .where(eq(users.id, userId));
     
     console.log(`✅ User ${user.email} is now an admin!`);
   } catch (error) {

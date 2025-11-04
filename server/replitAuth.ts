@@ -43,7 +43,7 @@ export function getSession() {
 
 function updateUserSession(
   user: any,
-  tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers
+  tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
 ) {
   user.claims = tokens.claims();
   user.access_token = tokens.access_token;
@@ -73,7 +73,7 @@ export async function setupAuth(app: Express) {
 
   const verify: VerifyFunction = async (
     tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
-    verified: passport.AuthenticateCallback
+    verified: passport.AuthenticateCallback,
   ) => {
     const user = {};
     updateUserSession(user, tokens);
@@ -119,12 +119,12 @@ export async function setupAuth(app: Express) {
       if (err || !user) {
         return res.redirect("/api/login");
       }
-      
+
       req.logIn(user, async (loginErr) => {
         if (loginErr) {
           return res.redirect("/api/login");
         }
-        
+
         // Check if user is admin and redirect accordingly
         try {
           const dbUser = await storage.getUser(user.claims.sub);
@@ -134,7 +134,7 @@ export async function setupAuth(app: Express) {
         } catch (error) {
           console.error("Error checking admin status:", error);
         }
-        
+
         return res.redirect("/");
       });
     })(req, res, next);
