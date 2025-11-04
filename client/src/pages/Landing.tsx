@@ -32,15 +32,26 @@ export default function Landing() {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
             {!isAuthenticated ? (
-              <a href="/api/login" data-testid="button-login-hero">
-                <Button 
-                  size="lg" 
-                  className="bg-primary/90 backdrop-blur-md hover:bg-primary text-primary-foreground px-8 py-6 text-lg h-auto"
-                >
-                  Get Started
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </a>
+              <>
+                <a href="/api/login" data-testid="button-login-hero">
+                  <Button 
+                    size="lg" 
+                    className="bg-primary/90 backdrop-blur-md hover:bg-primary text-primary-foreground px-8 py-6 text-lg h-auto"
+                  >
+                    Login / Sign Up
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </a>
+                <a href="/api/login" data-testid="button-admin-login">
+                  <Button 
+                    size="lg" 
+                    variant="outline"
+                    className="bg-white/10 backdrop-blur-md border-white/30 text-white hover:bg-white/20 px-8 py-6 text-lg h-auto"
+                  >
+                    Admin Login
+                  </Button>
+                </a>
+              </>
             ) : (
               <Link href="/menu" data-testid="button-browse-menu">
                 <Button 
@@ -52,17 +63,6 @@ export default function Landing() {
                 </Button>
               </Link>
             )}
-            <Button 
-              variant="outline" 
-              size="lg"
-              className="bg-white/10 backdrop-blur-md border-white/30 text-white hover:bg-white/20 px-8 py-6 text-lg h-auto"
-              onClick={() => {
-                document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              data-testid="button-learn-more"
-            >
-              Learn More
-            </Button>
           </div>
         </div>
       </section>
@@ -143,11 +143,16 @@ export default function Landing() {
             ))}
           </div>
 
-          <div className="text-center mt-12">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-12">
             <a href="/api/login" data-testid="button-login-cta">
               <Button size="lg" className="px-8 py-6 text-lg h-auto">
                 Login to Browse Full Menu
                 <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </a>
+            <a href="/api/login" data-testid="button-admin-login-cta">
+              <Button size="lg" variant="outline" className="px-8 py-6 text-lg h-auto">
+                Admin Login
               </Button>
             </a>
           </div>
