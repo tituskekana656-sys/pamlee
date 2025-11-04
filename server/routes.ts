@@ -83,6 +83,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/admin/products/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+
+      await storage.deleteProduct(req.params.id);
+      res.json({ message: "Product deleted successfully" });
+    } catch (error: any) {
+      console.error("Error deleting product:", error);
+      res.status(400).json({ message: error.message || "Failed to delete product" });
+    }
+  });
+
   // Order routes
   app.post("/api/orders", isAuthenticated, async (req: any, res) => {
     try {

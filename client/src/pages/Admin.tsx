@@ -178,6 +178,26 @@ export default function Admin() {
     },
   });
 
+  const deleteProductMutation = useMutation({
+    mutationFn: async (productId: string) => {
+      return await apiRequest("DELETE", `/api/admin/products/${productId}`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      toast({
+        title: "Success",
+        description: "Product deleted successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const resetProductForm = () => {
     setProductForm({
       name: "",
@@ -209,10 +229,15 @@ export default function Admin() {
       return;
     }
 
+    const formData = {
+      ...productForm,
+      imageUrl: productForm.imageUrl || "/attached_assets/generated_images/Cupcakes_product_photo_a1537e42.png"
+    };
+
     if (editingProduct) {
-      updateProductMutation.mutate({ id: editingProduct.id, data: productForm });
+      updateProductMutation.mutate({ id: editingProduct.id, data: formData });
     } else {
-      createProductMutation.mutate(productForm);
+      createProductMutation.mutate(formData);
     }
   };
 
@@ -729,11 +754,14 @@ export default function Admin() {
                     products.map((product) => (
                       <Card key={product.id}>
                         <CardContent className="p-4">
-                          <div className="aspect-square mb-4 overflow-hidden rounded-lg">
+                          <div className="aspect-square mb-4 overflow-hidden rounded-lg bg-muted">
                             <img
                               src={product.imageUrl}
                               alt={product.name}
                               className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.src = "/attached_assets/generated_images/Cupcakes_product_photo_a1537e42.png";
+                              }}
                             />
                           </div>
                           <h3 className="font-semibold mb-2">{product.name}</h3>
@@ -757,6 +785,18 @@ export default function Admin() {
                               onClick={() => handleEditProduct(product)}
                             >
                               <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                if (confirm(`Are you sure you want to delete "${product.name}"?`)) {
+                                  deleteProductMutation.mutate(product.id);
+                                }
+                              }}
+                              disabled={deleteProductMutation.isPending}
+                            >
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
                         </CardContent>
