@@ -129,6 +129,7 @@ export async function setupAuth(app: Express) {
         try {
           const dbUser = await storage.getUser(user.claims.sub);
           if (dbUser?.isAdmin) {
+            user.isAdmin = true;
             return res.redirect("/admin");
           }
         } catch (error) {
