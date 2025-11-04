@@ -68,6 +68,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/admin/products/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+
+      const product = await storage.updateProduct(req.params.id, req.body);
+      res.json(product);
+    } catch (error: any) {
+      console.error("Error updating product:", error);
+      res.status(400).json({ message: error.message || "Failed to update product" });
+    }
+  });
+
   // Order routes
   app.post("/api/orders", isAuthenticated, async (req: any, res) => {
     try {

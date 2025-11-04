@@ -22,6 +22,8 @@ import {
   BarChart3,
   AlertTriangle,
   UserCog,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import type { Order, Product, Special } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -51,6 +53,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 export default function Admin() {
   const { user, isLoading: authLoading } = useAuth();
@@ -59,6 +62,14 @@ export default function Admin() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [productForm, setProductForm] = useState({
+    name: "",
+    description: "",
+    price: "",
+    category: "",
+    imageUrl: "",
+  });
 
   const { data: orders, isLoading: ordersLoading } = useQuery<Order[]>({
     queryKey: ["/api/admin/orders"],
@@ -114,6 +125,96 @@ export default function Admin() {
       });
     },
   });
+
+  const createProductMutation = useMutation({
+    mutationFn: async (productData: any) => {
+      return await apiRequest("POST", "/api/products", {
+        ...productData,
+        price: productData.price.toString(),
+        inStock: true,
+        featured: false,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      toast({
+        title: "Success",
+        description: "Product created successfully",
+      });
+      setIsAddProductOpen(false);
+      resetProductForm();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateProductMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      return await apiRequest("PATCH", `/api/admin/products/${id}`, {
+        ...data,
+        price: data.price.toString(),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      toast({
+        title: "Success",
+        description: "Product updated successfully",
+      });
+      setEditingProduct(null);
+      resetProductForm();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const resetProductForm = () => {
+    setProductForm({
+      name: "",
+      description: "",
+      price: "",
+      category: "",
+      imageUrl: "",
+    });
+  };
+
+  const handleEditProduct = (product: Product) => {
+    setEditingProduct(product);
+    setProductForm({
+      name: product.name,
+      description: product.description || "",
+      price: product.price,
+      category: product.category,
+      imageUrl: product.imageUrl,
+    });
+  };
+
+  const handleSaveProduct = () => {
+    if (!productForm.name || !productForm.price || !productForm.category) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (editingProduct) {
+      updateProductMutation.mutate({ id: editingProduct.id, data: productForm });
+    } else {
+      createProductMutation.mutate(productForm);
+    }
+  };
 
   useEffect(() => {
     if (!authLoading && !user?.isAdmin) {
@@ -504,28 +605,48 @@ export default function Admin() {
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <h2 className="text-2xl font-bold">Products Management</h2>
-                  <Dialog open={isAddProductOpen} onOpenChange={setIsAddProductOpen}>
+                  <Dialog 
+                    open={isAddProductOpen || !!editingProduct} 
+                    onOpenChange={(open) => {
+                      if (!open) {
+                        setIsAddProductOpen(false);
+                        setEditingProduct(null);
+                        resetProductForm();
+                      }
+                    }}
+                  >
                     <DialogTrigger asChild>
-                      <Button>
+                      <Button onClick={() => setIsAddProductOpen(true)}>
                         <Plus className="h-4 w-4 mr-2" />
                         Add Product
                       </Button>
                     </DialogTrigger>
-                    <DialogContent>
+                    <DialogContent className="max-h-[90vh] overflow-y-auto">
                       <DialogHeader>
-                        <DialogTitle>Add New Product</DialogTitle>
+                        <DialogTitle>
+                          {editingProduct ? "Edit Product" : "Add New Product"}
+                        </DialogTitle>
                         <DialogDescription>
-                          Add a new product to your bakery inventory
+                          {editingProduct 
+                            ? "Update product details"
+                            : "Add a new product to your bakery inventory"}
                         </DialogDescription>
                       </DialogHeader>
                       <div className="space-y-4">
                         <div>
-                          <Label>Product Name</Label>
-                          <Input placeholder="e.g., Chocolate Cake" />
+                          <Label>Product Name *</Label>
+                          <Input 
+                            placeholder="e.g., Chocolate Cake"
+                            value={productForm.name}
+                            onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
+                          />
                         </div>
                         <div>
-                          <Label>Category</Label>
-                          <Select>
+                          <Label>Category *</Label>
+                          <Select
+                            value={productForm.category}
+                            onValueChange={(value) => setProductForm({ ...productForm, category: value })}
+                          >
                             <SelectTrigger>
                               <SelectValue placeholder="Select category" />
                             </SelectTrigger>
@@ -533,28 +654,66 @@ export default function Admin() {
                               <SelectItem value="cakes">Cakes</SelectItem>
                               <SelectItem value="breads">Breads</SelectItem>
                               <SelectItem value="pastries">Pastries</SelectItem>
-                              <SelectItem value="specials">Specials</SelectItem>
+                              <SelectItem value="drinks">Drinks</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
                         <div>
-                          <Label>Price (R)</Label>
-                          <Input type="number" placeholder="0.00" />
+                          <Label>Price (R) *</Label>
+                          <Input 
+                            type="number" 
+                            step="0.01"
+                            placeholder="0.00"
+                            value={productForm.price}
+                            onChange={(e) => setProductForm({ ...productForm, price: e.target.value })}
+                          />
                         </div>
                         <div>
                           <Label>Description</Label>
-                          <Input placeholder="Product description" />
+                          <Textarea 
+                            placeholder="Product description"
+                            value={productForm.description}
+                            onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
+                            rows={3}
+                          />
+                        </div>
+                        <div>
+                          <Label>Image URL</Label>
+                          <Input 
+                            placeholder="https://example.com/image.jpg"
+                            value={productForm.imageUrl}
+                            onChange={(e) => setProductForm({ ...productForm, imageUrl: e.target.value })}
+                          />
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Leave empty to use default image
+                          </p>
                         </div>
                       </div>
                       <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsAddProductOpen(false)}>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => {
+                            setIsAddProductOpen(false);
+                            setEditingProduct(null);
+                            resetProductForm();
+                          }}
+                        >
                           Cancel
                         </Button>
-                        <Button onClick={() => {
-                          toast({ title: "Coming Soon", description: "Product creation will be implemented" });
-                          setIsAddProductOpen(false);
-                        }}>
-                          Add Product
+                        <Button 
+                          onClick={handleSaveProduct}
+                          disabled={createProductMutation.isPending || updateProductMutation.isPending}
+                        >
+                          {createProductMutation.isPending || updateProductMutation.isPending ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Saving...
+                            </>
+                          ) : editingProduct ? (
+                            "Update Product"
+                          ) : (
+                            "Add Product"
+                          )}
                         </Button>
                       </DialogFooter>
                     </DialogContent>
@@ -588,11 +747,16 @@ export default function Admin() {
                               size="sm"
                               className="flex-1"
                               onClick={() => toggleProductStockMutation.mutate(product.id)}
+                              disabled={toggleProductStockMutation.isPending}
                             >
                               {product.inStock ? "In Stock" : "Out of Stock"}
                             </Button>
-                            <Button variant="outline" size="sm">
-                              Edit
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleEditProduct(product)}
+                            >
+                              <Pencil className="h-4 w-4" />
                             </Button>
                           </div>
                         </CardContent>

@@ -36,6 +36,7 @@ export interface IStorage {
   getProduct(id: string): Promise<Product | undefined>;
   createProduct(product: InsertProduct): Promise<Product>;
   updateProductStock(id: string, inStock: boolean): Promise<Product>;
+  updateProduct(id: string, data: Partial<typeof products.$inferInsert>): Promise<Product | undefined>;
 
   // Order operations
   createOrder(order: InsertOrder, items: InsertOrderItem[]): Promise<Order & { items: OrderItem[] }>;
@@ -99,6 +100,15 @@ export class DatabaseStorage implements IStorage {
     const [product] = await db
       .update(products)
       .set({ inStock, updatedAt: new Date() })
+      .where(eq(products.id, id))
+      .returning();
+    return product;
+  }
+
+  async updateProduct(id: string, data: Partial<typeof products.$inferInsert>): Promise<Product | undefined> {
+    const [product] = await db
+      .update(products)
+      .set(data)
       .where(eq(products.id, id))
       .returning();
     return product;
