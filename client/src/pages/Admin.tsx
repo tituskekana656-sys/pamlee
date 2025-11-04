@@ -24,6 +24,9 @@ import {
   UserCog,
   Pencil,
   Trash2,
+  Menu,
+  X,
+  Eye,
 } from "lucide-react";
 import type { Order, Product, Special } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -63,6 +66,8 @@ export default function Admin() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [productForm, setProductForm] = useState({
     name: "",
     description: "",
@@ -275,18 +280,36 @@ export default function Admin() {
       <div className="bg-background border-b sticky top-0 z-40">
         <div className="px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-primary">Admin Dashboard</h1>
-              <p className="text-sm text-muted-foreground">Pam_Lee's Kitchen Management</p>
-            </div>
             <div className="flex items-center gap-4">
-              <Button variant="outline" size="sm">
-                <Bell className="h-4 w-4 mr-2" />
-                Notifications
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="lg:hidden"
+                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              >
+                <Menu className="h-5 w-5" />
               </Button>
-              <Button variant="outline" size="sm">
-                <Settings className="h-4 w-4 mr-2" />
-                Settings
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold text-primary">Admin Dashboard</h1>
+                <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">Pam_Lee's Kitchen Management</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => toast({ title: "Notifications", description: "No new notifications" })}
+              >
+                <Bell className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Notifications</span>
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setActiveTab("settings")}
+              >
+                <Settings className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Settings</span>
               </Button>
             </div>
           </div>
@@ -295,12 +318,32 @@ export default function Admin() {
 
       <div className="flex">
         {/* Sidebar */}
-        <div className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 lg:pt-20 bg-background border-r">
-          <nav className="flex-1 px-4 py-6 space-y-2">
+        {/* Mobile Sidebar Overlay */}
+        {isSidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+            onClick={() => setIsSidebarOpen(false)}
+          />
+        )}
+        
+        {/* Sidebar */}
+        <div className={`
+          fixed lg:static inset-y-0 left-0 z-50 w-64 bg-background border-r
+          transform transition-transform duration-200 ease-in-out lg:translate-x-0
+          ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+          lg:flex lg:flex-col lg:pt-20 pt-24
+        `}>
+          <div className="flex items-center justify-between px-4 py-2 lg:hidden border-b">
+            <span className="font-semibold">Menu</span>
+            <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(false)}>
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+          <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
             <Button
               variant={activeTab === "dashboard" ? "default" : "ghost"}
               className="w-full justify-start"
-              onClick={() => setActiveTab("dashboard")}
+              onClick={() => { setActiveTab("dashboard"); setIsSidebarOpen(false); }}
             >
               <BarChart3 className="h-4 w-4 mr-2" />
               Dashboard
@@ -308,7 +351,7 @@ export default function Admin() {
             <Button
               variant={activeTab === "orders" ? "default" : "ghost"}
               className="w-full justify-start"
-              onClick={() => setActiveTab("orders")}
+              onClick={() => { setActiveTab("orders"); setIsSidebarOpen(false); }}
             >
               <ShoppingBag className="h-4 w-4 mr-2" />
               Orders
@@ -316,7 +359,7 @@ export default function Admin() {
             <Button
               variant={activeTab === "products" ? "default" : "ghost"}
               className="w-full justify-start"
-              onClick={() => setActiveTab("products")}
+              onClick={() => { setActiveTab("products"); setIsSidebarOpen(false); }}
             >
               <Package className="h-4 w-4 mr-2" />
               Products
@@ -324,7 +367,7 @@ export default function Admin() {
             <Button
               variant={activeTab === "inventory" ? "default" : "ghost"}
               className="w-full justify-start"
-              onClick={() => setActiveTab("inventory")}
+              onClick={() => { setActiveTab("inventory"); setIsSidebarOpen(false); }}
             >
               <Package className="h-4 w-4 mr-2" />
               Inventory
@@ -332,7 +375,7 @@ export default function Admin() {
             <Button
               variant={activeTab === "customers" ? "default" : "ghost"}
               className="w-full justify-start"
-              onClick={() => setActiveTab("customers")}
+              onClick={() => { setActiveTab("customers"); setIsSidebarOpen(false); }}
             >
               <Users className="h-4 w-4 mr-2" />
               Customers
@@ -340,7 +383,7 @@ export default function Admin() {
             <Button
               variant={activeTab === "staff" ? "default" : "ghost"}
               className="w-full justify-start"
-              onClick={() => setActiveTab("staff")}
+              onClick={() => { setActiveTab("staff"); setIsSidebarOpen(false); }}
             >
               <UserCog className="h-4 w-4 mr-2" />
               Staff
@@ -348,7 +391,7 @@ export default function Admin() {
             <Button
               variant={activeTab === "specials" ? "default" : "ghost"}
               className="w-full justify-start"
-              onClick={() => setActiveTab("specials")}
+              onClick={() => { setActiveTab("specials"); setIsSidebarOpen(false); }}
             >
               <Tag className="h-4 w-4 mr-2" />
               Specials
@@ -356,7 +399,7 @@ export default function Admin() {
             <Button
               variant={activeTab === "reports" ? "default" : "ghost"}
               className="w-full justify-start"
-              onClick={() => setActiveTab("reports")}
+              onClick={() => { setActiveTab("reports"); setIsSidebarOpen(false); }}
             >
               <FileText className="h-4 w-4 mr-2" />
               Reports
@@ -450,7 +493,7 @@ export default function Admin() {
                     <CardTitle>Quick Actions</CardTitle>
                   </CardHeader>
                   <CardContent className="flex flex-wrap gap-4">
-                    <Button onClick={() => setActiveTab("products")}>
+                    <Button onClick={() => { setActiveTab("products"); setIsAddProductOpen(true); }}>
                       <Plus className="h-4 w-4 mr-2" />
                       Add Product
                     </Button>
@@ -605,8 +648,12 @@ export default function Admin() {
                                 {new Date(order.createdAt).toLocaleDateString()}
                               </TableCell>
                               <TableCell>
-                                <Button variant="ghost" size="sm">
-                                  <FileText className="h-4 w-4" />
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={() => setSelectedOrder(order)}
+                                >
+                                  <Eye className="h-4 w-4" />
                                 </Button>
                               </TableCell>
                             </TableRow>
@@ -622,6 +669,112 @@ export default function Admin() {
                     </Table>
                   </CardContent>
                 </Card>
+
+                {/* Order Details Dialog */}
+                <Dialog open={!!selectedOrder} onOpenChange={(open) => !open && setSelectedOrder(null)}>
+                  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Order Details</DialogTitle>
+                      <DialogDescription>
+                        Order #{selectedOrder?.orderNumber}
+                      </DialogDescription>
+                    </DialogHeader>
+                    {selectedOrder && (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label className="text-muted-foreground">Customer</Label>
+                            <p className="font-medium">{selectedOrder.customerName}</p>
+                          </div>
+                          <div>
+                            <Label className="text-muted-foreground">Phone</Label>
+                            <p className="font-medium">{selectedOrder.customerPhone}</p>
+                          </div>
+                          <div>
+                            <Label className="text-muted-foreground">Email</Label>
+                            <p className="font-medium">{selectedOrder.customerEmail}</p>
+                          </div>
+                          <div>
+                            <Label className="text-muted-foreground">Delivery Type</Label>
+                            <Badge variant="outline">{selectedOrder.deliveryType}</Badge>
+                          </div>
+                          {selectedOrder.deliveryAddress && (
+                            <div className="col-span-2">
+                              <Label className="text-muted-foreground">Delivery Address</Label>
+                              <p className="font-medium">{selectedOrder.deliveryAddress}</p>
+                            </div>
+                          )}
+                          {selectedOrder.deliveryDate && (
+                            <div>
+                              <Label className="text-muted-foreground">Delivery Date</Label>
+                              <p className="font-medium">
+                                {new Date(selectedOrder.deliveryDate).toLocaleDateString()}
+                              </p>
+                            </div>
+                          )}
+                          {selectedOrder.deliveryTime && (
+                            <div>
+                              <Label className="text-muted-foreground">Delivery Time</Label>
+                              <p className="font-medium">{selectedOrder.deliveryTime}</p>
+                            </div>
+                          )}
+                        </div>
+                        
+                        {selectedOrder.specialInstructions && (
+                          <div>
+                            <Label className="text-muted-foreground">Special Instructions</Label>
+                            <p className="font-medium mt-1">{selectedOrder.specialInstructions}</p>
+                          </div>
+                        )}
+
+                        <div>
+                          <Label className="text-muted-foreground mb-2 block">Order Status</Label>
+                          <Select
+                            value={selectedOrder.status}
+                            onValueChange={(status) => {
+                              updateOrderStatusMutation.mutate({ orderId: selectedOrder.id, status });
+                              setSelectedOrder({ ...selectedOrder, status });
+                            }}
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="pending">Pending</SelectItem>
+                              <SelectItem value="confirmed">Confirmed</SelectItem>
+                              <SelectItem value="preparing">Preparing</SelectItem>
+                              <SelectItem value="ready">Ready</SelectItem>
+                              <SelectItem value="completed">Completed</SelectItem>
+                              <SelectItem value="cancelled">Cancelled</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div>
+                          <Label className="text-muted-foreground mb-2 block">Order Summary</Label>
+                          <div className="space-y-2">
+                            <div className="flex justify-between py-2 border-b">
+                              <span className="font-medium">Subtotal</span>
+                              <span>R{parseFloat(selectedOrder.subtotal).toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between py-2 border-b">
+                              <span className="font-medium">Delivery Fee</span>
+                              <span>R{parseFloat(selectedOrder.deliveryFee || "0").toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between py-2 font-bold text-lg">
+                              <span>Total</span>
+                              <span className="text-primary">R{parseFloat(selectedOrder.totalAmount).toFixed(2)}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="text-xs text-muted-foreground">
+                          Created: {new Date(selectedOrder.createdAt).toLocaleString()}
+                        </div>
+                      </div>
+                    )}
+                  </DialogContent>
+                </Dialog>
               </div>
             )}
 
@@ -823,7 +976,7 @@ export default function Admin() {
                     <p className="text-muted-foreground mb-4">
                       Track and manage your ingredient inventory and stock levels
                     </p>
-                    <Button>
+                    <Button onClick={() => toast({ title: "Coming Soon", description: "Inventory management feature will be available soon" })}>
                       <Plus className="h-4 w-4 mr-2" />
                       Add Inventory Item
                     </Button>
@@ -861,7 +1014,7 @@ export default function Admin() {
                     <p className="text-muted-foreground mb-4">
                       Manage staff accounts, roles, and permissions
                     </p>
-                    <Button>
+                    <Button onClick={() => toast({ title: "Coming Soon", description: "Staff management feature will be available soon" })}>
                       <Plus className="h-4 w-4 mr-2" />
                       Add Staff Member
                     </Button>
@@ -928,7 +1081,13 @@ export default function Admin() {
                       <p className="text-muted-foreground mb-4">
                         View detailed sales reports and analytics
                       </p>
-                      <Button variant="outline">
+                      <Button 
+                        variant="outline"
+                        onClick={() => toast({ 
+                          title: "Export Report", 
+                          description: "Report export feature coming soon" 
+                        })}
+                      >
                         <FileText className="h-4 w-4 mr-2" />
                         Export Report
                       </Button>
@@ -939,9 +1098,75 @@ export default function Admin() {
                       <CardTitle>Best Sellers</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-muted-foreground">
+                      <p className="text-muted-foreground mb-2">
                         Track your most popular products
                       </p>
+                      <p className="text-sm text-muted-foreground">
+                        Analytics feature coming soon
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            )}
+
+            {/* Settings */}
+            {activeTab === "settings" && (
+              <div className="space-y-6">
+                <h2 className="text-2xl font-bold">Settings</h2>
+                <div className="grid grid-cols-1 gap-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Bakery Information</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <Label>Bakery Name</Label>
+                        <Input defaultValue="Pam Lee's Kitchen" />
+                      </div>
+                      <div>
+                        <Label>Address</Label>
+                        <Input placeholder="123 Bakery Street" />
+                      </div>
+                      <div>
+                        <Label>Contact Phone</Label>
+                        <Input placeholder="+27 123 456 789" />
+                      </div>
+                      <div>
+                        <Label>Email</Label>
+                        <Input placeholder="info@pamleeskitchen.com" />
+                      </div>
+                      <Button onClick={() => toast({ title: "Settings saved", description: "Your changes have been saved successfully" })}>
+                        Save Changes
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Operating Hours</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Set your bakery's operating hours
+                      </p>
+                      <Button variant="outline" onClick={() => toast({ title: "Coming Soon", description: "Operating hours management will be available soon" })}>
+                        Configure Hours
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Payment Settings</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Configure payment methods and gateway
+                      </p>
+                      <Button variant="outline" onClick={() => toast({ title: "Coming Soon", description: "Payment settings will be available soon" })}>
+                        Configure Payments
+                      </Button>
                     </CardContent>
                   </Card>
                 </div>
