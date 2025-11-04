@@ -297,6 +297,210 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Staff routes
+  app.get("/api/admin/staff", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+
+      const staffList = await storage.getAllStaff();
+      res.json(staffList);
+    } catch (error) {
+      console.error("Error fetching staff:", error);
+      res.status(500).json({ message: "Failed to fetch staff" });
+    }
+  });
+
+  app.post("/api/admin/staff", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+
+      const newStaff = await storage.createStaff(req.body);
+      res.status(201).json(newStaff);
+    } catch (error: any) {
+      console.error("Error creating staff:", error);
+      res.status(400).json({ message: error.message || "Failed to create staff" });
+    }
+  });
+
+  app.patch("/api/admin/staff/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+
+      const updatedStaff = await storage.updateStaff(req.params.id, req.body);
+      res.json(updatedStaff);
+    } catch (error: any) {
+      console.error("Error updating staff:", error);
+      res.status(400).json({ message: error.message || "Failed to update staff" });
+    }
+  });
+
+  app.delete("/api/admin/staff/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+
+      await storage.deleteStaff(req.params.id);
+      res.json({ message: "Staff deleted successfully" });
+    } catch (error: any) {
+      console.error("Error deleting staff:", error);
+      res.status(400).json({ message: error.message || "Failed to delete staff" });
+    }
+  });
+
+  // Inventory routes
+  app.get("/api/admin/inventory", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+
+      const inventoryList = await storage.getAllInventory();
+      res.json(inventoryList);
+    } catch (error) {
+      console.error("Error fetching inventory:", error);
+      res.status(500).json({ message: "Failed to fetch inventory" });
+    }
+  });
+
+  app.get("/api/admin/inventory/low-stock", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+
+      const lowStock = await storage.getLowStockItems();
+      res.json(lowStock);
+    } catch (error) {
+      console.error("Error fetching low stock items:", error);
+      res.status(500).json({ message: "Failed to fetch low stock items" });
+    }
+  });
+
+  app.post("/api/admin/inventory", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+
+      const newInventory = await storage.createInventory(req.body);
+      res.status(201).json(newInventory);
+    } catch (error: any) {
+      console.error("Error creating inventory:", error);
+      res.status(400).json({ message: error.message || "Failed to create inventory" });
+    }
+  });
+
+  app.patch("/api/admin/inventory/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+
+      const updatedInventory = await storage.updateInventory(req.params.id, req.body);
+      res.json(updatedInventory);
+    } catch (error: any) {
+      console.error("Error updating inventory:", error);
+      res.status(400).json({ message: error.message || "Failed to update inventory" });
+    }
+  });
+
+  app.delete("/api/admin/inventory/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+
+      await storage.deleteInventory(req.params.id);
+      res.json({ message: "Inventory deleted successfully" });
+    } catch (error: any) {
+      console.error("Error deleting inventory:", error);
+      res.status(400).json({ message: error.message || "Failed to delete inventory" });
+    }
+  });
+
+  // Customer routes
+  app.get("/api/admin/customers", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+
+      const customers = await storage.getAllCustomers();
+      res.json(customers);
+    } catch (error) {
+      console.error("Error fetching customers:", error);
+      res.status(500).json({ message: "Failed to fetch customers" });
+    }
+  });
+
+  app.get("/api/admin/customers/:id/orders", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+
+      const customerOrders = await storage.getCustomerOrders(req.params.id);
+      res.json(customerOrders);
+    } catch (error) {
+      console.error("Error fetching customer orders:", error);
+      res.status(500).json({ message: "Failed to fetch customer orders" });
+    }
+  });
+
+  // Settings routes
+  app.get("/api/admin/settings", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+
+      const settings = await storage.getSettings();
+      res.json(settings || {
+        name: "Pam Lee's Kitchen",
+        address: "Giyani, Malamulele, Limpopo, South Africa",
+        phone: "0730528247",
+        email: "phamelamageza@gmail.com",
+      });
+    } catch (error) {
+      console.error("Error fetching settings:", error);
+      res.status(500).json({ message: "Failed to fetch settings" });
+    }
+  });
+
+  app.patch("/api/admin/settings", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+
+      const updatedSettings = await storage.updateSettings(req.body);
+      res.json(updatedSettings);
+    } catch (error: any) {
+      console.error("Error updating settings:", error);
+      res.status(400).json({ message: error.message || "Failed to update settings" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

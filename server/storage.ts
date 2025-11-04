@@ -7,6 +7,9 @@ import {
   specials,
   galleryImages,
   contactMessages,
+  staff,
+  inventory,
+  bakerySettings,
   type User,
   type UpsertUser,
   type Product,
@@ -21,6 +24,12 @@ import {
   type InsertGalleryImage,
   type ContactMessage,
   type InsertContactMessage,
+  type Staff,
+  type InsertStaff,
+  type Inventory,
+  type InsertInventory,
+  type BakerySettings,
+  type InsertBakerySettings,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and } from "drizzle-orm";
@@ -58,6 +67,27 @@ export interface IStorage {
   // Contact operations
   createContactMessage(message: InsertContactMessage): Promise<ContactMessage>;
   getAllContactMessages(): Promise<ContactMessage[]>;
+
+  // Staff operations
+  getAllStaff(): Promise<Staff[]>;
+  createStaff(staff: InsertStaff): Promise<Staff>;
+  updateStaff(id: string, data: Partial<typeof staff.$inferInsert>): Promise<Staff>;
+  deleteStaff(id: string): Promise<void>;
+
+  // Inventory operations
+  getAllInventory(): Promise<Inventory[]>;
+  createInventory(inventory: InsertInventory): Promise<Inventory>;
+  updateInventory(id: string, data: Partial<typeof inventory.$inferInsert>): Promise<Inventory>;
+  deleteInventory(id: string): Promise<void>;
+  getLowStockItems(): Promise<Inventory[]>;
+
+  // Settings operations
+  getSettings(): Promise<BakerySettings | undefined>;
+  updateSettings(data: Partial<typeof bakerySettings.$inferInsert>): Promise<BakerySettings>;
+
+  // Customer operations
+  getAllCustomers(): Promise<User[]>;
+  getCustomerOrders(userId: string): Promise<Order[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -208,6 +238,102 @@ export class DatabaseStorage implements IStorage {
 
   async getAllContactMessages(): Promise<ContactMessage[]> {
     return await db.select().from(contactMessages).orderBy(desc(contactMessages.createdAt));
+  }
+
+  // Staff operations
+  async getAllStaff(): Promise<Staff[]> {
+    return await db.select().from(staff).orderBy(desc(staff.createdAt));
+  }
+
+  async createStaff(staffData: InsertStaff): Promise<Staff> {
+    const [newStaff] = await db.insert(staff).values(staffData).returning();
+    return newStaff;
+  }
+
+  async updateStaff(id: string, data: Partial<typeof staff.$inferInsert>): Promise<Staff> {
+    const [updatedStaff] = await db
+      .update(staff)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(staff.id, id))
+      .returning();
+    return updatedStaff;
+  }
+
+  async deleteStaff(id: string): Promise<void> {
+    await db.delete(staff).where(eq(staff.id, id));
+  }
+
+  // Inventory operations
+  async getAllInventory(): Promise<Inventory[]> {
+    return await db.select().from(inventory).orderBy(desc(inventory.createdAt));
+  }
+
+  async createInventory(inventoryData: InsertInventory): Promise<Inventory> {
+    const [newInventory] = await db.insert(inventory).values(inventoryData).returning();
+    return newInventory;
+  }
+
+  async updateInventory(id: string, data: Partial<typeof inventory.$inferInsert>): Promise<Inventory> {
+    const [updatedInventory] = await db
+      .update(inventory)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(inventory.id, id))
+      .returning();
+    return updatedInventory;
+  }
+
+  async deleteInventory(id: string): Promise<void> {
+    await db.delete(inventory).where(eq(inventory.id, id));
+  }
+
+  async getLowStockItems(): Promise<Inventory[]> {
+    return await db
+      .select()
+      .from(inventory)
+      .where(sql`${inventory.quantity} <= ${inventory.lowStockThreshold}`)
+      .orderBy(desc(inventory.createdAt));
+  }
+
+  // Settings operations
+  async getSettings(): Promise<BakerySettings | undefined> {
+    const [settings] = await db.select().from(bakerySettings).limit(1);
+    return settings;
+  }
+
+  async updateSettings(data: Partial<typeof bakerySettings.$inferInsert>): Promise<BakerySettings> {
+    const existingSettings = await this.getSettings();
+    
+    if (existingSettings) {
+      const [updated] = await db
+        .update(bakerySettings)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(bakerySettings.id, existingSettings.id))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db
+        .insert(bakerySettings)
+        .values({ ...data, name: data.name || "Pam Lee's Kitchen" })
+        .returning();
+      return created;
+    }
+  }
+
+  // Customer operations
+  async getAllCustomers(): Promise<User[]> {
+    return await db
+      .select()
+      .from(users)
+      .where(eq(users.isAdmin, false))
+      .orderBy(desc(users.createdAt));
+  }
+
+  async getCustomerOrders(userId: string): Promise<Order[]> {
+    return await db
+      .select()
+      .from(orders)
+      .where(eq(orders.userId, userId))
+      .orderBy(desc(orders.createdAt));
   }
 }
 

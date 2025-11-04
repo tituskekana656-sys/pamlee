@@ -68,12 +68,39 @@ export default function Admin() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isAddStaffOpen, setIsAddStaffOpen] = useState(false);
+  const [isAddInventoryOpen, setIsAddInventoryOpen] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
+  
   const [productForm, setProductForm] = useState({
     name: "",
     description: "",
     price: "",
     category: "",
     imageUrl: "",
+  });
+
+  const [staffForm, setStaffForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    role: "",
+  });
+
+  const [inventoryForm, setInventoryForm] = useState({
+    name: "",
+    category: "",
+    quantity: "",
+    unit: "",
+    lowStockThreshold: "",
+    supplier: "",
+  });
+
+  const [settingsForm, setSettingsForm] = useState({
+    name: "",
+    address: "",
+    phone: "",
+    email: "",
   });
 
   const { data: orders, isLoading: ordersLoading } = useQuery<Order[]>({
@@ -89,6 +116,31 @@ export default function Admin() {
   const { data: specials, isLoading: specialsLoading } = useQuery<Special[]>({
     queryKey: ["/api/specials"],
     enabled: !!user?.isAdmin,
+  });
+
+  const { data: staff, isLoading: staffLoading } = useQuery<any[]>({
+    queryKey: ["/api/admin/staff"],
+    enabled: !!user?.isAdmin && activeTab === "staff",
+  });
+
+  const { data: inventory, isLoading: inventoryLoading } = useQuery<any[]>({
+    queryKey: ["/api/admin/inventory"],
+    enabled: !!user?.isAdmin && activeTab === "inventory",
+  });
+
+  const { data: customers, isLoading: customersLoading } = useQuery<any[]>({
+    queryKey: ["/api/admin/customers"],
+    enabled: !!user?.isAdmin && activeTab === "customers",
+  });
+
+  const { data: settings } = useQuery<any>({
+    queryKey: ["/api/admin/settings"],
+    enabled: !!user?.isAdmin && activeTab === "settings",
+  });
+
+  const { data: customerOrders } = useQuery<Order[]>({
+    queryKey: ["/api/admin/customers", selectedCustomer?.id, "orders"],
+    enabled: !!selectedCustomer,
   });
 
   const updateOrderStatusMutation = useMutation({
@@ -203,6 +255,75 @@ export default function Admin() {
     },
   });
 
+  const createStaffMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return await apiRequest("POST", "/api/admin/staff", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/staff"] });
+      toast({ title: "Success", description: "Staff member added successfully" });
+      setIsAddStaffOpen(false);
+      resetStaffForm();
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const deleteStaffMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await apiRequest("DELETE", `/api/admin/staff/${id}`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/staff"] });
+      toast({ title: "Success", description: "Staff member deleted" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const createInventoryMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return await apiRequest("POST", "/api/admin/inventory", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/inventory"] });
+      toast({ title: "Success", description: "Inventory item added successfully" });
+      setIsAddInventoryOpen(false);
+      resetInventoryForm();
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const deleteInventoryMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await apiRequest("DELETE", `/api/admin/inventory/${id}`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/inventory"] });
+      toast({ title: "Success", description: "Inventory item deleted" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const updateSettingsMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return await apiRequest("PATCH", "/api/admin/settings", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/settings"] });
+      toast({ title: "Success", description: "Settings updated successfully" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
   const resetProductForm = () => {
     setProductForm({
       name: "",
@@ -210,6 +331,26 @@ export default function Admin() {
       price: "",
       category: "",
       imageUrl: "",
+    });
+  };
+
+  const resetStaffForm = () => {
+    setStaffForm({
+      name: "",
+      email: "",
+      phone: "",
+      role: "",
+    });
+  };
+
+  const resetInventoryForm = () => {
+    setInventoryForm({
+      name: "",
+      category: "",
+      quantity: "",
+      unit: "",
+      lowStockThreshold: "",
+      supplier: "",
     });
   };
 
@@ -252,6 +393,17 @@ export default function Admin() {
     }
   }, [user, authLoading]);
 
+  useEffect(() => {
+    if (settings) {
+      setSettingsForm({
+        name: settings.name || "",
+        address: settings.address || "",
+        phone: settings.phone || "",
+        email: settings.email || "",
+      });
+    }
+  }, [settings]);
+
   if (authLoading || !user?.isAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -260,13 +412,11 @@ export default function Admin() {
     );
   }
 
-  // Calculate dashboard statistics
   const totalOrders = orders?.length || 0;
   const totalSales = orders?.reduce((sum, order) => sum + parseFloat(order.totalAmount), 0) || 0;
   const pendingOrders = orders?.filter(o => o.status === "pending").length || 0;
   const lowStockProducts = products?.filter(p => !p.inStock).length || 0;
 
-  // Filter orders
   const filteredOrders = orders?.filter(order => {
     const matchesSearch = order.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase());
@@ -276,7 +426,6 @@ export default function Admin() {
 
   return (
     <div className="min-h-screen bg-muted/30">
-      {/* Top Navigation Bar */}
       <div className="bg-background border-b sticky top-0 z-40">
         <div className="px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
@@ -298,14 +447,6 @@ export default function Admin() {
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={() => toast({ title: "Notifications", description: "No new notifications" })}
-              >
-                <Bell className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Notifications</span>
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
                 onClick={() => setActiveTab("settings")}
               >
                 <Settings className="h-4 w-4 sm:mr-2" />
@@ -317,8 +458,6 @@ export default function Admin() {
       </div>
 
       <div className="flex">
-        {/* Sidebar */}
-        {/* Mobile Sidebar Overlay */}
         {isSidebarOpen && (
           <div 
             className="fixed inset-0 bg-black/50 z-40 lg:hidden"
@@ -326,7 +465,6 @@ export default function Admin() {
           />
         )}
         
-        {/* Sidebar */}
         <div className={`
           fixed lg:static inset-y-0 left-0 z-50 w-64 bg-background border-r
           transform transition-transform duration-200 ease-in-out lg:translate-x-0
@@ -407,22 +545,8 @@ export default function Admin() {
           </nav>
         </div>
 
-        {/* Main Content */}
         <div className="flex-1 lg:pl-64">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            {/* Mobile Tab Navigation */}
-            <div className="lg:hidden mb-6">
-              <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="grid grid-cols-4 w-full">
-                  <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-                  <TabsTrigger value="orders">Orders</TabsTrigger>
-                  <TabsTrigger value="products">Products</TabsTrigger>
-                  <TabsTrigger value="reports">Reports</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
-
-            {/* Dashboard Overview */}
             {activeTab === "dashboard" && (
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -487,7 +611,6 @@ export default function Admin() {
                   </Card>
                 </div>
 
-                {/* Quick Actions */}
                 <Card>
                   <CardHeader>
                     <CardTitle>Quick Actions</CardTitle>
@@ -508,7 +631,6 @@ export default function Admin() {
                   </CardContent>
                 </Card>
 
-                {/* Recent Orders */}
                 <Card>
                   <CardHeader>
                     <CardTitle>Recent Orders</CardTitle>
@@ -541,7 +663,6 @@ export default function Admin() {
                   </CardContent>
                 </Card>
 
-                {/* Low Stock Alerts */}
                 {lowStockProducts > 0 && (
                   <Card className="border-yellow-500">
                     <CardHeader>
@@ -563,7 +684,6 @@ export default function Admin() {
               </div>
             )}
 
-            {/* Orders Management */}
             {activeTab === "orders" && (
               <div className="space-y-6">
                 <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
@@ -594,83 +714,84 @@ export default function Admin() {
 
                 <Card>
                   <CardContent className="p-0">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Order #</TableHead>
-                          <TableHead>Customer</TableHead>
-                          <TableHead>Phone</TableHead>
-                          <TableHead>Type</TableHead>
-                          <TableHead>Amount</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {ordersLoading ? (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
                           <TableRow>
-                            <TableCell colSpan={8} className="text-center py-8">
-                              <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-                            </TableCell>
+                            <TableHead>Order #</TableHead>
+                            <TableHead>Customer</TableHead>
+                            <TableHead>Phone</TableHead>
+                            <TableHead>Type</TableHead>
+                            <TableHead>Amount</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Actions</TableHead>
                           </TableRow>
-                        ) : filteredOrders && filteredOrders.length > 0 ? (
-                          filteredOrders.map((order) => (
-                            <TableRow key={order.id}>
-                              <TableCell className="font-medium">#{order.orderNumber}</TableCell>
-                              <TableCell>{order.customerName}</TableCell>
-                              <TableCell>{order.customerPhone}</TableCell>
-                              <TableCell>
-                                <Badge variant="outline">{order.deliveryType}</Badge>
-                              </TableCell>
-                              <TableCell>R{parseFloat(order.totalAmount).toFixed(2)}</TableCell>
-                              <TableCell>
-                                <Select
-                                  value={order.status}
-                                  onValueChange={(status) =>
-                                    updateOrderStatusMutation.mutate({ orderId: order.id, status })
-                                  }
-                                >
-                                  <SelectTrigger className="w-32">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="pending">Pending</SelectItem>
-                                    <SelectItem value="confirmed">Confirmed</SelectItem>
-                                    <SelectItem value="preparing">Preparing</SelectItem>
-                                    <SelectItem value="ready">Ready</SelectItem>
-                                    <SelectItem value="completed">Completed</SelectItem>
-                                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </TableCell>
-                              <TableCell>
-                                {new Date(order.createdAt).toLocaleDateString()}
-                              </TableCell>
-                              <TableCell>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm"
-                                  onClick={() => setSelectedOrder(order)}
-                                >
-                                  <Eye className="h-4 w-4" />
-                                </Button>
+                        </TableHeader>
+                        <TableBody>
+                          {ordersLoading ? (
+                            <TableRow>
+                              <TableCell colSpan={8} className="text-center py-8">
+                                <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
                               </TableCell>
                             </TableRow>
-                          ))
-                        ) : (
-                          <TableRow>
-                            <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                              No orders found
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
+                          ) : filteredOrders && filteredOrders.length > 0 ? (
+                            filteredOrders.map((order) => (
+                              <TableRow key={order.id}>
+                                <TableCell className="font-medium">#{order.orderNumber}</TableCell>
+                                <TableCell>{order.customerName}</TableCell>
+                                <TableCell>{order.customerPhone}</TableCell>
+                                <TableCell>
+                                  <Badge variant="outline">{order.deliveryType}</Badge>
+                                </TableCell>
+                                <TableCell>R{parseFloat(order.totalAmount).toFixed(2)}</TableCell>
+                                <TableCell>
+                                  <Select
+                                    value={order.status}
+                                    onValueChange={(status) =>
+                                      updateOrderStatusMutation.mutate({ orderId: order.id, status })
+                                    }
+                                  >
+                                    <SelectTrigger className="w-32">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="pending">Pending</SelectItem>
+                                      <SelectItem value="confirmed">Confirmed</SelectItem>
+                                      <SelectItem value="preparing">Preparing</SelectItem>
+                                      <SelectItem value="ready">Ready</SelectItem>
+                                      <SelectItem value="completed">Completed</SelectItem>
+                                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </TableCell>
+                                <TableCell>
+                                  {new Date(order.createdAt).toLocaleDateString()}
+                                </TableCell>
+                                <TableCell>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm"
+                                    onClick={() => setSelectedOrder(order)}
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          ) : (
+                            <TableRow>
+                              <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                                No orders found
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
                   </CardContent>
                 </Card>
 
-                {/* Order Details Dialog */}
                 <Dialog open={!!selectedOrder} onOpenChange={(open) => !open && setSelectedOrder(null)}>
                   <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
@@ -704,28 +825,7 @@ export default function Admin() {
                               <p className="font-medium">{selectedOrder.deliveryAddress}</p>
                             </div>
                           )}
-                          {selectedOrder.deliveryDate && (
-                            <div>
-                              <Label className="text-muted-foreground">Delivery Date</Label>
-                              <p className="font-medium">
-                                {new Date(selectedOrder.deliveryDate).toLocaleDateString()}
-                              </p>
-                            </div>
-                          )}
-                          {selectedOrder.deliveryTime && (
-                            <div>
-                              <Label className="text-muted-foreground">Delivery Time</Label>
-                              <p className="font-medium">{selectedOrder.deliveryTime}</p>
-                            </div>
-                          )}
                         </div>
-                        
-                        {selectedOrder.specialInstructions && (
-                          <div>
-                            <Label className="text-muted-foreground">Special Instructions</Label>
-                            <p className="font-medium mt-1">{selectedOrder.specialInstructions}</p>
-                          </div>
-                        )}
 
                         <div>
                           <Label className="text-muted-foreground mb-2 block">Order Status</Label>
@@ -753,14 +853,6 @@ export default function Admin() {
                         <div>
                           <Label className="text-muted-foreground mb-2 block">Order Summary</Label>
                           <div className="space-y-2">
-                            <div className="flex justify-between py-2 border-b">
-                              <span className="font-medium">Subtotal</span>
-                              <span>R{parseFloat(selectedOrder.subtotal).toFixed(2)}</span>
-                            </div>
-                            <div className="flex justify-between py-2 border-b">
-                              <span className="font-medium">Delivery Fee</span>
-                              <span>R{parseFloat(selectedOrder.deliveryFee || "0").toFixed(2)}</span>
-                            </div>
                             <div className="flex justify-between py-2 font-bold text-lg">
                               <span>Total</span>
                               <span className="text-primary">R{parseFloat(selectedOrder.totalAmount).toFixed(2)}</span>
@@ -778,7 +870,6 @@ export default function Admin() {
               </div>
             )}
 
-            {/* Products Management */}
             {activeTab === "products" && (
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
@@ -964,66 +1055,434 @@ export default function Admin() {
               </div>
             )}
 
-            {/* Inventory Management */}
             {activeTab === "inventory" && (
               <div className="space-y-6">
-                <h2 className="text-2xl font-bold">Inventory Management</h2>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-bold">Inventory Management</h2>
+                  <Dialog open={isAddInventoryOpen} onOpenChange={setIsAddInventoryOpen}>
+                    <DialogTrigger asChild>
+                      <Button>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Inventory Item
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Add Inventory Item</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <Label>Item Name *</Label>
+                          <Input 
+                            placeholder="e.g., Flour"
+                            value={inventoryForm.name}
+                            onChange={(e) => setInventoryForm({ ...inventoryForm, name: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <Label>Category *</Label>
+                          <Select
+                            value={inventoryForm.category}
+                            onValueChange={(value) => setInventoryForm({ ...inventoryForm, category: value })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="ingredient">Ingredient</SelectItem>
+                              <SelectItem value="packaging">Packaging</SelectItem>
+                              <SelectItem value="equipment">Equipment</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label>Quantity *</Label>
+                            <Input 
+                              type="number"
+                              step="0.01"
+                              placeholder="0"
+                              value={inventoryForm.quantity}
+                              onChange={(e) => setInventoryForm({ ...inventoryForm, quantity: e.target.value })}
+                            />
+                          </div>
+                          <div>
+                            <Label>Unit *</Label>
+                            <Select
+                              value={inventoryForm.unit}
+                              onValueChange={(value) => setInventoryForm({ ...inventoryForm, unit: value })}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select unit" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="kg">Kilograms (kg)</SelectItem>
+                                <SelectItem value="liters">Liters</SelectItem>
+                                <SelectItem value="pieces">Pieces</SelectItem>
+                                <SelectItem value="boxes">Boxes</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <div>
+                          <Label>Low Stock Threshold *</Label>
+                          <Input 
+                            type="number"
+                            step="0.01"
+                            placeholder="Alert when below this amount"
+                            value={inventoryForm.lowStockThreshold}
+                            onChange={(e) => setInventoryForm({ ...inventoryForm, lowStockThreshold: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <Label>Supplier</Label>
+                          <Input 
+                            placeholder="Supplier name"
+                            value={inventoryForm.supplier}
+                            onChange={(e) => setInventoryForm({ ...inventoryForm, supplier: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsAddInventoryOpen(false)}>
+                          Cancel
+                        </Button>
+                        <Button 
+                          onClick={() => {
+                            if (!inventoryForm.name || !inventoryForm.category || !inventoryForm.quantity || 
+                                !inventoryForm.unit || !inventoryForm.lowStockThreshold) {
+                              toast({
+                                title: "Validation Error",
+                                description: "Please fill in all required fields",
+                                variant: "destructive",
+                              });
+                              return;
+                            }
+                            createInventoryMutation.mutate(inventoryForm);
+                          }}
+                          disabled={createInventoryMutation.isPending}
+                        >
+                          {createInventoryMutation.isPending ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Adding...
+                            </>
+                          ) : (
+                            "Add Item"
+                          )}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+
                 <Card>
-                  <CardHeader>
-                    <CardTitle>Stock Levels</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground mb-4">
-                      Track and manage your ingredient inventory and stock levels
-                    </p>
-                    <Button onClick={() => toast({ title: "Coming Soon", description: "Inventory management feature will be available soon" })}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Inventory Item
-                    </Button>
+                  <CardContent className="p-0">
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Item Name</TableHead>
+                            <TableHead>Category</TableHead>
+                            <TableHead>Quantity</TableHead>
+                            <TableHead>Low Stock Alert</TableHead>
+                            <TableHead>Supplier</TableHead>
+                            <TableHead>Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {inventoryLoading ? (
+                            <TableRow>
+                              <TableCell colSpan={6} className="text-center py-8">
+                                <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+                              </TableCell>
+                            </TableRow>
+                          ) : inventory && inventory.length > 0 ? (
+                            inventory.map((item) => (
+                              <TableRow key={item.id}>
+                                <TableCell className="font-medium">{item.name}</TableCell>
+                                <TableCell>{item.category}</TableCell>
+                                <TableCell>
+                                  {parseFloat(item.quantity).toFixed(2)} {item.unit}
+                                  {parseFloat(item.quantity) <= parseFloat(item.lowStockThreshold) && (
+                                    <Badge variant="destructive" className="ml-2">Low</Badge>
+                                  )}
+                                </TableCell>
+                                <TableCell>{parseFloat(item.lowStockThreshold).toFixed(2)} {item.unit}</TableCell>
+                                <TableCell>{item.supplier || "N/A"}</TableCell>
+                                <TableCell>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm"
+                                    onClick={() => {
+                                      if (confirm(`Delete ${item.name}?`)) {
+                                        deleteInventoryMutation.mutate(item.id);
+                                      }
+                                    }}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          ) : (
+                            <TableRow>
+                              <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                                No inventory items yet
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
                   </CardContent>
                 </Card>
               </div>
             )}
 
-            {/* Customers Management */}
             {activeTab === "customers" && (
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold">Customers Management</h2>
                 <Card>
-                  <CardHeader>
-                    <CardTitle>Customer Database</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground">
-                      View and manage customer information and order history
-                    </p>
+                  <CardContent className="p-0">
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Name</TableHead>
+                            <TableHead>Email</TableHead>
+                            <TableHead>Joined</TableHead>
+                            <TableHead>Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {customersLoading ? (
+                            <TableRow>
+                              <TableCell colSpan={4} className="text-center py-8">
+                                <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+                              </TableCell>
+                            </TableRow>
+                          ) : customers && customers.length > 0 ? (
+                            customers.map((customer) => (
+                              <TableRow key={customer.id}>
+                                <TableCell className="font-medium">
+                                  {customer.firstName} {customer.lastName}
+                                </TableCell>
+                                <TableCell>{customer.email}</TableCell>
+                                <TableCell>{new Date(customer.createdAt).toLocaleDateString()}</TableCell>
+                                <TableCell>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm"
+                                    onClick={() => setSelectedCustomer(customer)}
+                                  >
+                                    <Eye className="h-4 w-4 mr-2" />
+                                    View Orders
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          ) : (
+                            <TableRow>
+                              <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                                No customers yet
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
                   </CardContent>
                 </Card>
+
+                <Dialog open={!!selectedCustomer} onOpenChange={(open) => !open && setSelectedCustomer(null)}>
+                  <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                      <DialogTitle>Customer Order History</DialogTitle>
+                      <DialogDescription>
+                        Orders for {selectedCustomer?.firstName} {selectedCustomer?.lastName}
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      {customerOrders && customerOrders.length > 0 ? (
+                        customerOrders.map((order) => (
+                          <div key={order.id} className="flex justify-between border-b pb-2">
+                            <div>
+                              <p className="font-medium">#{order.orderNumber}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {new Date(order.createdAt).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-medium">R{parseFloat(order.totalAmount).toFixed(2)}</p>
+                              <Badge>{order.status}</Badge>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-center text-muted-foreground py-4">No orders yet</p>
+                      )}
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
             )}
 
-            {/* Staff Management */}
             {activeTab === "staff" && (
               <div className="space-y-6">
-                <h2 className="text-2xl font-bold">Staff Management</h2>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-bold">Staff Management</h2>
+                  <Dialog open={isAddStaffOpen} onOpenChange={setIsAddStaffOpen}>
+                    <DialogTrigger asChild>
+                      <Button>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Staff Member
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Add Staff Member</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <Label>Name *</Label>
+                          <Input 
+                            placeholder="Full name"
+                            value={staffForm.name}
+                            onChange={(e) => setStaffForm({ ...staffForm, name: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <Label>Email *</Label>
+                          <Input 
+                            type="email"
+                            placeholder="email@example.com"
+                            value={staffForm.email}
+                            onChange={(e) => setStaffForm({ ...staffForm, email: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <Label>Phone</Label>
+                          <Input 
+                            placeholder="Phone number"
+                            value={staffForm.phone}
+                            onChange={(e) => setStaffForm({ ...staffForm, phone: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <Label>Role *</Label>
+                          <Select
+                            value={staffForm.role}
+                            onValueChange={(value) => setStaffForm({ ...staffForm, role: value })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select role" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="baker">Baker</SelectItem>
+                              <SelectItem value="delivery">Delivery</SelectItem>
+                              <SelectItem value="manager">Manager</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsAddStaffOpen(false)}>
+                          Cancel
+                        </Button>
+                        <Button 
+                          onClick={() => {
+                            if (!staffForm.name || !staffForm.email || !staffForm.role) {
+                              toast({
+                                title: "Validation Error",
+                                description: "Please fill in all required fields",
+                                variant: "destructive",
+                              });
+                              return;
+                            }
+                            createStaffMutation.mutate(staffForm);
+                          }}
+                          disabled={createStaffMutation.isPending}
+                        >
+                          {createStaffMutation.isPending ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Adding...
+                            </>
+                          ) : (
+                            "Add Staff"
+                          )}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+
                 <Card>
-                  <CardHeader>
-                    <CardTitle>Staff Members</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground mb-4">
-                      Manage staff accounts, roles, and permissions
-                    </p>
-                    <Button onClick={() => toast({ title: "Coming Soon", description: "Staff management feature will be available soon" })}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Staff Member
-                    </Button>
+                  <CardContent className="p-0">
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Name</TableHead>
+                            <TableHead>Email</TableHead>
+                            <TableHead>Phone</TableHead>
+                            <TableHead>Role</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {staffLoading ? (
+                            <TableRow>
+                              <TableCell colSpan={6} className="text-center py-8">
+                                <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+                              </TableCell>
+                            </TableRow>
+                          ) : staff && staff.length > 0 ? (
+                            staff.map((member) => (
+                              <TableRow key={member.id}>
+                                <TableCell className="font-medium">{member.name}</TableCell>
+                                <TableCell>{member.email}</TableCell>
+                                <TableCell>{member.phone || "N/A"}</TableCell>
+                                <TableCell>
+                                  <Badge variant="outline">{member.role}</Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant={member.isActive ? "default" : "secondary"}>
+                                    {member.isActive ? "Active" : "Inactive"}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm"
+                                    onClick={() => {
+                                      if (confirm(`Delete ${member.name}?`)) {
+                                        deleteStaffMutation.mutate(member.id);
+                                      }
+                                    }}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          ) : (
+                            <TableRow>
+                              <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                                No staff members yet
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
                   </CardContent>
                 </Card>
               </div>
             )}
 
-            {/* Specials */}
             {activeTab === "specials" && (
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold">Specials & Promotions</h2>
@@ -1068,7 +1527,6 @@ export default function Admin() {
               </div>
             )}
 
-            {/* Reports */}
             {activeTab === "reports" && (
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold">Sales & Reports</h2>
@@ -1078,98 +1536,114 @@ export default function Admin() {
                       <CardTitle>Sales Analytics</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-muted-foreground mb-4">
-                        View detailed sales reports and analytics
-                      </p>
-                      <Button 
-                        variant="outline"
-                        onClick={() => toast({ 
-                          title: "Export Report", 
-                          description: "Report export feature coming soon" 
-                        })}
-                      >
-                        <FileText className="h-4 w-4 mr-2" />
-                        Export Report
-                      </Button>
+                      <div className="space-y-4">
+                        <div>
+                          <Label className="text-muted-foreground">Total Revenue</Label>
+                          <p className="text-3xl font-bold text-primary">R{totalSales.toFixed(2)}</p>
+                        </div>
+                        <div>
+                          <Label className="text-muted-foreground">Total Orders</Label>
+                          <p className="text-2xl font-bold">{totalOrders}</p>
+                        </div>
+                        <div>
+                          <Label className="text-muted-foreground">Average Order Value</Label>
+                          <p className="text-2xl font-bold">
+                            R{totalOrders > 0 ? (totalSales / totalOrders).toFixed(2) : "0.00"}
+                          </p>
+                        </div>
+                      </div>
                     </CardContent>
                   </Card>
                   <Card>
                     <CardHeader>
-                      <CardTitle>Best Sellers</CardTitle>
+                      <CardTitle>Order Status Breakdown</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-muted-foreground mb-2">
-                        Track your most popular products
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        Analytics feature coming soon
-                      </p>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span>Pending</span>
+                          <Badge>{orders?.filter(o => o.status === "pending").length || 0}</Badge>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Confirmed</span>
+                          <Badge>{orders?.filter(o => o.status === "confirmed").length || 0}</Badge>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Preparing</span>
+                          <Badge>{orders?.filter(o => o.status === "preparing").length || 0}</Badge>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Ready</span>
+                          <Badge>{orders?.filter(o => o.status === "ready").length || 0}</Badge>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Completed</span>
+                          <Badge variant="default">{orders?.filter(o => o.status === "completed").length || 0}</Badge>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Cancelled</span>
+                          <Badge variant="destructive">{orders?.filter(o => o.status === "cancelled").length || 0}</Badge>
+                        </div>
+                      </div>
                     </CardContent>
                   </Card>
                 </div>
               </div>
             )}
 
-            {/* Settings */}
             {activeTab === "settings" && (
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold">Settings</h2>
-                <div className="grid grid-cols-1 gap-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Bakery Information</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div>
-                        <Label>Bakery Name</Label>
-                        <Input defaultValue="Pam Lee's Kitchen" />
-                      </div>
-                      <div>
-                        <Label>Address</Label>
-                        <Input placeholder="123 Bakery Street" />
-                      </div>
-                      <div>
-                        <Label>Contact Phone</Label>
-                        <Input placeholder="+27 123 456 789" />
-                      </div>
-                      <div>
-                        <Label>Email</Label>
-                        <Input placeholder="info@pamleeskitchen.com" />
-                      </div>
-                      <Button onClick={() => toast({ title: "Settings saved", description: "Your changes have been saved successfully" })}>
-                        Save Changes
-                      </Button>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Operating Hours</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Set your bakery's operating hours
-                      </p>
-                      <Button variant="outline" onClick={() => toast({ title: "Coming Soon", description: "Operating hours management will be available soon" })}>
-                        Configure Hours
-                      </Button>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Payment Settings</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Configure payment methods and gateway
-                      </p>
-                      <Button variant="outline" onClick={() => toast({ title: "Coming Soon", description: "Payment settings will be available soon" })}>
-                        Configure Payments
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </div>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Bakery Information</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <Label>Bakery Name</Label>
+                      <Input 
+                        value={settingsForm.name}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, name: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label>Address</Label>
+                      <Textarea 
+                        value={settingsForm.address}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, address: e.target.value })}
+                        rows={2}
+                      />
+                    </div>
+                    <div>
+                      <Label>Contact Phone</Label>
+                      <Input 
+                        value={settingsForm.phone}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, phone: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label>Email</Label>
+                      <Input 
+                        type="email"
+                        value={settingsForm.email}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, email: e.target.value })}
+                      />
+                    </div>
+                    <Button 
+                      onClick={() => updateSettingsMutation.mutate(settingsForm)}
+                      disabled={updateSettingsMutation.isPending}
+                    >
+                      {updateSettingsMutation.isPending ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        "Save Changes"
+                      )}
+                    </Button>
+                  </CardContent>
+                </Card>
               </div>
             )}
           </div>

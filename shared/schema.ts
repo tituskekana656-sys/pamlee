@@ -82,10 +82,14 @@ export const orders = pgTable("orders", {
   customerPhone: varchar("customer_phone", { length: 50 }).notNull(),
   deliveryAddress: text("delivery_address"),
   deliveryType: varchar("delivery_type", { length: 20 }).notNull(), // "delivery" or "pickup"
+  deliveryDate: varchar("delivery_date", { length: 50 }),
+  deliveryTime: varchar("delivery_time", { length: 50 }),
   deliveryFee: decimal("delivery_fee", { precision: 10, scale: 2 }).notNull().default("0.00"),
   paymentMethod: varchar("payment_method", { length: 50 }).notNull(), // "cash", "card", "eft"
+  subtotal: decimal("subtotal", { precision: 10, scale: 2 }).notNull(),
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
   status: varchar("status", { length: 20 }).notNull().default("pending"),
+  specialInstructions: text("special_instructions"),
   notes: text("notes"),
   canCancel: boolean("can_cancel").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -181,6 +185,73 @@ export const insertContactMessageSchema = createInsertSchema(contactMessages).om
 
 export type InsertContactMessage = z.infer<typeof insertContactMessageSchema>;
 export type ContactMessage = typeof contactMessages.$inferSelect;
+
+// Staff table
+export const staff = pgTable("staff", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id),
+  name: varchar("name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull(),
+  phone: varchar("phone", { length: 50 }),
+  role: varchar("role", { length: 50 }).notNull(), // "baker", "delivery", "manager"
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertStaffSchema = createInsertSchema(staff).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertStaff = z.infer<typeof insertStaffSchema>;
+export type Staff = typeof staff.$inferSelect;
+
+// Inventory table
+export const inventory = pgTable("inventory", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name", { length: 255 }).notNull(),
+  category: varchar("category", { length: 50 }).notNull(), // "ingredient", "packaging", "equipment"
+  quantity: decimal("quantity", { precision: 10, scale: 2 }).notNull(),
+  unit: varchar("unit", { length: 50 }).notNull(), // "kg", "liters", "pieces"
+  lowStockThreshold: decimal("low_stock_threshold", { precision: 10, scale: 2 }).notNull(),
+  supplier: varchar("supplier", { length: 255 }),
+  lastRestocked: timestamp("last_restocked"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertInventorySchema = createInsertSchema(inventory).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertInventory = z.infer<typeof insertInventorySchema>;
+export type Inventory = typeof inventory.$inferSelect;
+
+// Bakery settings table
+export const bakerySettings = pgTable("bakery_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name", { length: 255 }).notNull(),
+  address: text("address"),
+  phone: varchar("phone", { length: 50 }),
+  email: varchar("email", { length: 255 }),
+  logoUrl: text("logo_url"),
+  openingHours: jsonb("opening_hours"), // { "monday": "8:00-17:00", etc. }
+  deliveryFee: decimal("delivery_fee", { precision: 10, scale: 2 }),
+  minimumOrder: decimal("minimum_order", { precision: 10, scale: 2 }),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertBakerySettingsSchema = createInsertSchema(bakerySettings).omit({
+  id: true,
+  updatedAt: true,
+});
+
+export type InsertBakerySettings = z.infer<typeof insertBakerySettingsSchema>;
+export type BakerySettings = typeof bakerySettings.$inferSelect;
 
 // Relations
 export const ordersRelations = relations(orders, ({ many, one }) => ({
