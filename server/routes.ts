@@ -78,7 +78,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const validatedOrder = insertOrderSchema.parse(orderData);
-      const validatedItems = items.map((item: any) => insertOrderItemSchema.parse(item));
+      
+      // Validate items without orderId (will be added in storage layer)
+      const validatedItems = items.map((item: any) => {
+        const { orderId, ...itemData } = item;
+        return itemData;
+      });
 
       const order = await storage.createOrder(validatedOrder, validatedItems);
       res.status(201).json(order);

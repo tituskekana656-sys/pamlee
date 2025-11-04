@@ -115,6 +115,7 @@ export const orderItems = pgTable("order_items", {
 
 export const insertOrderItemSchema = createInsertSchema(orderItems).omit({
   id: true,
+  orderId: true,
   createdAt: true,
 });
 
