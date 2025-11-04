@@ -23,6 +23,8 @@ const orderSchema = z.object({
   customerPhone: z.string().min(10, "Phone number must be at least 10 digits"),
   deliveryType: z.enum(["delivery", "pickup"]),
   deliveryAddress: z.string().optional(),
+  deliveryDate: z.string().optional(),
+  deliveryTime: z.string().optional(),
   paymentMethod: z.enum(["cash", "card", "eft"], {
     required_error: "Please select a payment method",
   }),
@@ -60,6 +62,8 @@ export default function Order() {
       customerPhone: "",
       deliveryType: "delivery",
       deliveryAddress: "",
+      deliveryDate: "",
+      deliveryTime: "",
       paymentMethod: "cash",
       notes: "",
     },
@@ -95,6 +99,7 @@ export default function Order() {
         ...data,
         userId: user?.id,
         deliveryFee: deliveryFee.toFixed(2),
+        subtotal: subtotal.toFixed(2),
         totalAmount: total.toFixed(2),
         items: orderItems,
       });
