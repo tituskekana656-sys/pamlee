@@ -8,7 +8,7 @@ async function makeAdmin() {
   // 3. Replace "YOUR_USER_ID_HERE" with your actual user ID
   // 4. Run this script: npx tsx server/make-admin.ts
   
-  const userId = "YOUR_USER_ID_HERE"; // Replace with your user ID from the logs
+  const userId = "49124288"; // Your user ID from the logs
   
   try {
     if (userId === "YOUR_USER_ID_HERE") {
