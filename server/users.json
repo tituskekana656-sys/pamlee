@@ -5,5 +5,12 @@
     "email": "tituskekana656@gmail.com",
     "password": "$2b$10$RzcIzi1v2LsK5PzymGQ7/OaSk.QHZmZJvT72KeIEaRO9OlWwKexja",
     "createdAt": "2025-11-05T06:21:21.440Z"
+  },
+  {
+    "id": "1762323896298",
+    "username": "admin",
+    "email": "titusmahlatsekekana@gmail.com",
+    "password": "$2b$10$eqKz5bulLPF8LDNKx3bKU.Ym3wblVL/AWemg7PI.1ncLixI.0NQZu",
+    "createdAt": "2025-11-05T06:24:56.298Z"
   }
 ]
