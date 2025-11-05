@@ -87,6 +87,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const { passwordHash, ...userWithoutPassword } = user;
+      console.log("Login successful for user:", userWithoutPassword);
       res.json({ user: userWithoutPassword, token });
     } catch (error: any) {
       console.error("Error during login:", error);
@@ -105,6 +106,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
+      console.log("Fetching user data:", user);
       res.json(user);
     } catch (error) {
       console.error("Error fetching user:", error);

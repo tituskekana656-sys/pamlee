@@ -11,6 +11,12 @@ export default function Landing() {
   const { isAuthenticated, user } = useAuth();
   const [, setLocation] = useLocation();
 
+  // Redirect admin users to admin panel
+  if (isAuthenticated && user?.isAdmin) {
+    setLocation("/admin");
+    return null;
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Hero Section */}
