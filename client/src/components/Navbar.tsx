@@ -98,7 +98,7 @@ export function Navbar({ cartItemCount = 0 }: NavbarProps) {
                   <User className="h-4 w-4 text-muted-foreground" />
                   {/* This part needs to be updated to reflect user data from JWT payload if available, or a generic name */}
                   <span className="text-sm font-medium">
-                    {user?.firstName || user?.email?.split('@')[0] || 'User'}
+                    {user?.username || user?.email?.split('@')[0] || 'User'}
                   </span>
                 </div>
                 {/* Logout button should now call handleLogout */}

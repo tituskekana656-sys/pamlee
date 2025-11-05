@@ -38,20 +38,22 @@ export default function Login() {
         throw new Error(data.message || "Authentication failed");
       }
 
-      // Refresh the user data in the cache
-      await queryClient.invalidateQueries({ queryKey: ["user"] });
-
       toast({
         title: isLogin ? "Login successful" : "Account created",
         description: `Welcome${isLogin ? ' back' : ''}, ${data.user.username}!`,
       });
 
-      // Redirect to admin page if user is admin, otherwise home
-      if (data.user.isAdmin) {
-        setLocation("/admin");
-      } else {
-        setLocation("/");
-      }
+      // Update the user data in the cache immediately
+      queryClient.setQueryData(["user"], data.user);
+
+      // Small delay to ensure state updates before redirect
+      setTimeout(() => {
+        if (data.user.isAdmin) {
+          setLocation("/admin");
+        } else {
+          setLocation("/");
+        }
+      }, 100);
     } catch (error: any) {
       toast({
         title: "Error",
