@@ -46,8 +46,12 @@ export default function Login() {
         description: `Welcome${isLogin ? ' back' : ''}, ${data.user.username}!`,
       });
 
-      // Redirect to home page, not admin
-      setLocation("/");
+      // Redirect to admin page if user is admin, otherwise home
+      if (data.user.isAdmin) {
+        setLocation("/admin");
+      } else {
+        setLocation("/");
+      }
     } catch (error: any) {
       toast({
         title: "Error",
