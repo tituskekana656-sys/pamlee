@@ -95,7 +95,7 @@ export default function Order() {
         price: item.product.price,
       }));
 
-      return await apiRequest("POST", "/api/orders", {
+      const response = await apiRequest("POST", "/api/orders", {
         ...data,
         userId: user?.id,
         deliveryFee: deliveryFee.toFixed(2),
@@ -103,6 +103,8 @@ export default function Order() {
         totalAmount: total.toFixed(2),
         items: orderItems,
       });
+      
+      return await response.json();
     },
     onSuccess: (data: any) => {
       toast({
@@ -110,7 +112,7 @@ export default function Order() {
         description: `Your order number is ${data.orderNumber}. You can track it on the order tracking page.`,
       });
       clearCart();
-      setLocation("/order-tracking");
+      setLocation(`/order-tracking?orderNumber=${data.orderNumber}`);
     },
     onError: (error: Error) => {
       toast({

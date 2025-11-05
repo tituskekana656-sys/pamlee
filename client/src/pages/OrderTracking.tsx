@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -19,10 +20,20 @@ const statusConfig = {
 };
 
 export default function OrderTracking() {
+  const [location] = useLocation();
   const [orderNumber, setOrderNumber] = useState("");
   const [searchedOrderNumber, setSearchedOrderNumber] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlOrderNumber = params.get('orderNumber');
+    if (urlOrderNumber) {
+      setOrderNumber(urlOrderNumber);
+      setSearchedOrderNumber(urlOrderNumber);
+    }
+  }, [location]);
 
   const { data: order, isLoading, error } = useQuery<Order & { items: OrderItem[] }>({
     queryKey: ["/api/orders/track", searchedOrderNumber],

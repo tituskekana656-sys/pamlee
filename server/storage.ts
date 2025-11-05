@@ -98,6 +98,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
+    const existingUser = await this.getUser(userData.id!);
+    
     const [user] = await db
       .insert(users)
       .values(userData)
@@ -105,6 +107,7 @@ export class DatabaseStorage implements IStorage {
         target: users.id,
         set: {
           ...userData,
+          isAdmin: existingUser?.isAdmin ?? false,
           updatedAt: new Date(),
         },
       })
