@@ -38,6 +38,9 @@ export default function Login() {
         throw new Error(data.message || "Authentication failed");
       }
 
+      console.log("Login response data:", data);
+      console.log("User isAdmin status:", data.user.isAdmin);
+
       toast({
         title: isLogin ? "Login successful" : "Account created",
         description: `Welcome${isLogin ? ' back' : ''}, ${data.user.username}!`,
@@ -46,14 +49,14 @@ export default function Login() {
       // Update the user data in the cache immediately
       queryClient.setQueryData(["user"], data.user);
 
-      // Small delay to ensure state updates before redirect
-      setTimeout(() => {
-        if (data.user.isAdmin) {
-          setLocation("/admin");
-        } else {
-          setLocation("/");
-        }
-      }, 100);
+      // Redirect based on admin status
+      if (data.user.isAdmin) {
+        console.log("Redirecting to admin page");
+        setLocation("/admin");
+      } else {
+        console.log("Redirecting to home page");
+        setLocation("/");
+      }
     } catch (error: any) {
       toast({
         title: "Error",

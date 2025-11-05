@@ -1,3 +1,4 @@
+import React from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Cookie, Clock, Award } from "lucide-react";
 import { useLocation } from "wouter";
@@ -12,10 +13,12 @@ export default function Landing() {
   const [, setLocation] = useLocation();
 
   // Redirect admin users to admin panel
-  if (isAuthenticated && user?.isAdmin) {
-    setLocation("/admin");
-    return null;
-  }
+  React.useEffect(() => {
+    if (isAuthenticated && user?.isAdmin) {
+      console.log("Admin user detected, redirecting to admin page");
+      setLocation("/admin");
+    }
+  }, [isAuthenticated, user, setLocation]);
 
   return (
     <div className="min-h-screen flex flex-col">

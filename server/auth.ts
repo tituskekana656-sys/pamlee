@@ -42,7 +42,9 @@ export function setupAuth(app: Express) {
         maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
       });
 
-      res.json({ user: sanitizeUser(user) });
+      const sanitizedUser = sanitizeUser(user);
+      console.log("Signup successful for user:", sanitizedUser);
+      res.json({ user: sanitizedUser });
     } catch (error) {
       console.error('Signup error:', error);
       res.status(500).json({ message: 'Internal server error' });
@@ -85,7 +87,9 @@ export function setupAuth(app: Express) {
         maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
       });
 
-      res.json({ user: sanitizeUser(user) });
+      const sanitizedUser = sanitizeUser(user);
+      console.log("Login successful for user:", sanitizedUser);
+      res.json({ user: sanitizedUser });
     } catch (error) {
       console.error('Login error:', error);
       res.status(500).json({ message: 'Internal server error' });
