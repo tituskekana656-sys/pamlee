@@ -33,7 +33,7 @@ export default function Landing() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
             {!isAuthenticated ? (
               <>
-                <a href="/api/login" data-testid="button-login-hero">
+                <Link href="/login" data-testid="button-login-hero">
                   <Button 
                     size="lg" 
                     className="bg-primary/90 backdrop-blur-md hover:bg-primary text-primary-foreground px-8 py-6 text-lg h-auto"
@@ -41,8 +41,8 @@ export default function Landing() {
                     Login / Sign Up
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
-                </a>
-                <a href="/api/login" data-testid="button-admin-login">
+                </Link>
+                <Link href="/login" data-testid="button-admin-login">
                   <Button 
                     size="lg" 
                     variant="outline"
@@ -50,7 +50,7 @@ export default function Landing() {
                   >
                     Admin Login
                   </Button>
-                </a>
+                </Link>
               </>
             ) : (
               <Link href="/menu" data-testid="button-browse-menu">
@@ -144,17 +144,17 @@ export default function Landing() {
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-12">
-            <a href="/api/login" data-testid="button-login-cta">
+            <Link href="/login" data-testid="button-login-cta">
               <Button size="lg" className="px-8 py-6 text-lg h-auto">
                 Login to Browse Full Menu
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
-            </a>
-            <a href="/api/login" data-testid="button-admin-login-cta">
+            </Link>
+            <Link href="/login" data-testid="button-admin-login-cta">
               <Button size="lg" variant="outline" className="px-8 py-6 text-lg h-auto">
                 Admin Login
               </Button>
-            </a>
+            </Link>
           </div>
         </div>
       </section>
@@ -168,7 +168,7 @@ export default function Landing() {
           <p className="text-lg mb-8 opacity-90">
             Join our community and enjoy fresh, homemade baked goods delivered to your door
           </p>
-          <a href="/api/login" data-testid="button-signup-cta">
+          <Link href="/login" data-testid="button-signup-cta">
             <Button 
               size="lg" 
               variant="secondary"
@@ -177,7 +177,7 @@ export default function Landing() {
               Create Your Account
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
-          </a>
+          </Link>
         </div>
       </section>
 

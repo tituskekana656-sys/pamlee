@@ -22,9 +22,26 @@ export function Navbar({ cartItemCount = 0 }: NavbarProps) {
     { path: "/contact", label: "Contact" },
   ];
 
+  // This logic might need to be updated based on how admin status is determined with the new auth system.
+  // For now, assuming `user` object might still have an `isAdmin` property.
   if (user?.isAdmin) {
     navLinks.push({ path: "/admin", label: "Admin" });
   }
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include", // This might need adjustment based on how cookies/tokens are handled server-side
+      });
+      localStorage.removeItem("token"); // Remove the stored JWT
+      window.location.href = "/"; // Redirect to home or login page
+    } catch (error) {
+      console.error("Logout failed:", error);
+      // Optionally, handle error display to the user
+    }
+  };
+
 
   return (
     <nav className="sticky top-0 z-50 bg-background border-b shadow-sm">
@@ -33,9 +50,9 @@ export function Navbar({ cartItemCount = 0 }: NavbarProps) {
           {/* Logo */}
           <Link href="/" data-testid="link-home">
             <div className="flex items-center gap-3 hover-elevate active-elevate-2 rounded-lg px-2 py-1 -ml-2 cursor-pointer">
-              <img 
-                src={logoImage} 
-                alt="Pam_Lee's Kitchen Logo" 
+              <img
+                src={logoImage}
+                alt="Pam_Lee's Kitchen Logo"
                 className="h-10 w-10 md:h-12 md:w-12 object-contain"
               />
               <div>
@@ -88,24 +105,25 @@ export function Navbar({ cartItemCount = 0 }: NavbarProps) {
               <div className="hidden md:flex items-center gap-2">
                 <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted">
                   <User className="h-4 w-4 text-muted-foreground" />
+                  {/* This part needs to be updated to reflect user data from JWT payload if available, or a generic name */}
                   <span className="text-sm font-medium">
                     {user?.firstName || user?.email?.split('@')[0] || 'User'}
                   </span>
                 </div>
-                <a href="/api/logout" data-testid="link-logout">
-                  <Button variant="ghost" size="sm" data-testid="button-logout">
-                    <LogOut className="h-4 w-4 mr-2" />
-                    Logout
-                  </Button>
-                </a>
+                {/* Logout button should now call handleLogout */}
+                <Button variant="ghost" size="sm" onClick={handleLogout} data-testid="button-logout">
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
+                </Button>
               </div>
             ) : (
-              <a href="/api/login" data-testid="link-login" className="hidden md:block">
+              // Link to the new login page
+              <Link href="/login" data-testid="link-login" className="hidden md:block">
                 <Button variant="default" size="sm" data-testid="button-login">
                   <User className="h-4 w-4 mr-2" />
                   Login
                 </Button>
-              </a>
+              </Link>
             )}
 
             {/* Mobile Menu Button */}
@@ -143,23 +161,24 @@ export function Navbar({ cartItemCount = 0 }: NavbarProps) {
             <div className="pt-4 border-t space-y-2">
               {isAuthenticated ? (
                 <>
+                  {/* This part needs to be updated to reflect user data from JWT payload if available */}
                   <div className="px-4 py-2 text-sm text-muted-foreground">
                     Signed in as {user?.email}
                   </div>
-                  <a href="/api/logout" className="block">
-                    <Button variant="destructive" className="w-full" data-testid="mobile-button-logout">
-                      <LogOut className="h-4 w-4 mr-2" />
-                      Logout
-                    </Button>
-                  </a>
+                  {/* Logout button should now call handleLogout */}
+                  <Button variant="destructive" className="w-full" onClick={handleLogout} data-testid="mobile-button-logout">
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Logout
+                  </Button>
                 </>
               ) : (
-                <a href="/api/login" className="block">
+                // Link to the new login page
+                <Link href="/login" className="block">
                   <Button className="w-full" data-testid="mobile-button-login">
                     <User className="h-4 w-4 mr-2" />
                     Login
                   </Button>
-                </a>
+                </Link>
               )}
             </div>
           </div>

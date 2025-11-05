@@ -44,14 +44,49 @@ export const getQueryFn: <T>(options: {
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      queryFn: getQueryFn({ on401: "throw" }),
-      refetchInterval: false,
-      refetchOnWindowFocus: false,
-      staleTime: Infinity,
-      retry: false,
+      queryFn: async ({ queryKey }) => {
+        const token = localStorage.getItem("token");
+        const res = await fetch(queryKey[0] as string, {
+          credentials: "include",
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+
+        if (!res.ok) {
+          if (res.status >= 500) {
+            throw new Error(`${res.status}: ${res.statusText}`);
+          }
+
+          throw new Error(`${res.status}: ${await res.text()}`);
+        }
+
+        return res.json();
+      },
     },
     mutations: {
-      retry: false,
+      mutationFn: async (options: any) => {
+        const { method = "POST", url, data, headers = {} } = options;
+        const token = localStorage.getItem("token");
+        const res = await fetch(url, {
+          method,
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...headers,
+          },
+          body: data ? JSON.stringify(data) : undefined,
+          credentials: "include",
+        });
+
+        if (!res.ok) {
+          if (res.status >= 500) {
+            throw new Error(`${res.status}: ${res.statusText}`);
+          }
+
+          throw new Error(`${res.status}: ${await res.text()}`);
+        }
+
+        return res.json();
+      },
     },
   },
 });

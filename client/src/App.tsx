@@ -10,6 +10,7 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/Landing";
+import Login from "@/pages/Login";
 import Home from "@/pages/Home";
 import Menu from "@/pages/Menu";
 import Order from "@/pages/Order";
@@ -30,6 +31,7 @@ function Router() {
       <main className="flex-1">
         <Switch>
           <Route path="/" component={Landing} />
+          <Route path="/login" component={Login} />
           <Route path="/home" component={Home} />
           <Route path="/menu" component={Menu} />
           <Route path="/order" component={Order} />

@@ -36,9 +36,11 @@ import { eq, desc, and, sql } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
-  // User operations - Required for Replit Auth
+  // User operations
   getUser(id: string): Promise<User | undefined>;
-  upsertUser(user: UpsertUser): Promise<User>;
+  getUserByEmail(email: string): Promise<(User & { passwordHash: string }) | undefined>;
+  createUser(user: UpsertUser): Promise<User>;
+  updateUser(id: string, data: Partial<UpsertUser>): Promise<User | undefined>;
 
   // Product operations
   getAllProducts(): Promise<Product[]>;
@@ -91,28 +93,55 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  // User operations - Required for Replit Auth
+  // User operations
   async getUser(id: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
+    const [user] = await db.select({
+      id: users.id,
+      email: users.email,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      profileImageUrl: users.profileImageUrl,
+      isAdmin: users.isAdmin,
+      createdAt: users.createdAt,
+      updatedAt: users.updatedAt,
+    }).from(users).where(eq(users.id, id)).limit(1);
     return user;
   }
 
-  async upsertUser(userData: UpsertUser): Promise<User> {
-    const existingUser = await this.getUser(userData.id!);
-    
-    const [user] = await db
-      .insert(users)
-      .values(userData)
-      .onConflictDoUpdate({
-        target: users.id,
-        set: {
-          ...userData,
-          isAdmin: existingUser?.isAdmin ?? false,
-          updatedAt: new Date(),
-        },
-      })
-      .returning();
-    return user;
+  async getUserByEmail(email: string): Promise<(User & { passwordHash: string }) | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    return user as any;
+  }
+
+  async createUser(user: UpsertUser): Promise<User> {
+    const [newUser] = await db.insert(users).values(user).returning({
+      id: users.id,
+      email: users.email,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      profileImageUrl: users.profileImageUrl,
+      isAdmin: users.isAdmin,
+      createdAt: users.createdAt,
+      updatedAt: users.updatedAt,
+    });
+    return newUser!;
+  }
+
+  async updateUser(id: string, data: Partial<UpsertUser>): Promise<User | undefined> {
+    const [updatedUser] = await db.update(users)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning({
+        id: users.id,
+        email: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        profileImageUrl: users.profileImageUrl,
+        isAdmin: users.isAdmin,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt,
+      });
+    return updatedUser;
   }
 
   // Product operations
@@ -305,7 +334,7 @@ export class DatabaseStorage implements IStorage {
 
   async updateSettings(data: Partial<typeof bakerySettings.$inferInsert>): Promise<BakerySettings> {
     const existingSettings = await this.getSettings();
-    
+
     if (existingSettings) {
       const [updated] = await db
         .update(bakerySettings)

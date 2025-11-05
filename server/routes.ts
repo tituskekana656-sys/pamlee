@@ -1,26 +1,108 @@
-// Following javascript_log_in_with_replit blueprint
+
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { authMiddleware, generateToken, hashPassword, comparePassword } from "./auth";
 import {
   insertProductSchema,
   insertOrderSchema,
-  insertOrderItemSchema,
   insertSpecialSchema,
   insertGalleryImageSchema,
   insertContactMessageSchema,
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Auth middleware
-  await setupAuth(app);
-
   // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  app.post('/api/auth/signup', async (req, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
+      const { email, password, firstName, lastName } = req.body;
+
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email and password are required" });
+      }
+
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: "User already exists" });
+      }
+
+      const passwordHash = await hashPassword(password);
+      const user = await storage.createUser({
+        email,
+        passwordHash,
+        firstName: firstName || '',
+        lastName: lastName || '',
+        isAdmin: false,
+      });
+
+      const token = generateToken({
+        userId: user.id,
+        email: user.email,
+        isAdmin: user.isAdmin,
+      });
+
+      res.cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+
+      res.json({ user, token });
+    } catch (error: any) {
+      console.error("Error during signup:", error);
+      res.status(500).json({ message: "Failed to create account" });
+    }
+  });
+
+  app.post('/api/auth/login', async (req, res) => {
+    try {
+      const { email, password } = req.body;
+
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email and password are required" });
+      }
+
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      const isValidPassword = await comparePassword(password, user.passwordHash);
+      if (!isValidPassword) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      const token = generateToken({
+        userId: user.id,
+        email: user.email,
+        isAdmin: user.isAdmin,
+      });
+
+      res.cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+
+      const { passwordHash, ...userWithoutPassword } = user;
+      res.json({ user: userWithoutPassword, token });
+    } catch (error: any) {
+      console.error("Error during login:", error);
+      res.status(500).json({ message: "Failed to login" });
+    }
+  });
+
+  app.post('/api/auth/logout', (req, res) => {
+    res.clearCookie('token');
+    res.json({ message: "Logged out successfully" });
+  });
+
+  app.get('/api/auth/user', authMiddleware, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
       res.json(user);
     } catch (error) {
       console.error("Error fetching user:", error);
@@ -52,9 +134,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/products", isAuthenticated, async (req: any, res) => {
+  app.post("/api/products", authMiddleware, async (req: any, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
+      const user = await storage.getUser(req.user.userId);
       if (!user?.isAdmin) {
         return res.status(403).json({ message: "Unauthorized" });
       }
@@ -68,9 +150,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/admin/products/:id", isAuthenticated, async (req: any, res) => {
+  app.patch("/api/admin/products/:id", authMiddleware, async (req: any, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
+      const user = await storage.getUser(req.user.userId);
       if (!user?.isAdmin) {
         return res.status(403).json({ message: "Unauthorized" });
       }
@@ -83,9 +165,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/admin/products/:id", isAuthenticated, async (req: any, res) => {
+  app.delete("/api/admin/products/:id", authMiddleware, async (req: any, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
+      const user = await storage.getUser(req.user.userId);
       if (!user?.isAdmin) {
         return res.status(403).json({ message: "Unauthorized" });
       }
@@ -99,7 +181,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Order routes
-  app.post("/api/orders", isAuthenticated, async (req: any, res) => {
+  app.post("/api/orders", authMiddleware, async (req: any, res) => {
     try {
       const { items, ...orderData } = req.body;
       
@@ -109,7 +191,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const validatedOrder = insertOrderSchema.parse(orderData);
       
-      // Validate items without orderId (will be added in storage layer)
       const validatedItems = items.map((item: any) => {
         const { orderId, ...itemData } = item;
         return itemData;
@@ -143,7 +224,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Order not found" });
       }
 
-      // Check if order can be cancelled (within 24 hours and status is pending)
       const orderAge = Date.now() - new Date(order.createdAt).getTime();
       const hoursOld = orderAge / (1000 * 60 * 60);
 
@@ -164,9 +244,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin order routes
-  app.get("/api/admin/orders", isAuthenticated, async (req: any, res) => {
+  app.get("/api/admin/orders", authMiddleware, async (req: any, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
+      const user = await storage.getUser(req.user.userId);
       if (!user?.isAdmin) {
         return res.status(403).json({ message: "Unauthorized" });
       }
@@ -179,9 +259,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/admin/orders/:id/status", isAuthenticated, async (req: any, res) => {
+  app.patch("/api/admin/orders/:id/status", authMiddleware, async (req: any, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
+      const user = await storage.getUser(req.user.userId);
       if (!user?.isAdmin) {
         return res.status(403).json({ message: "Unauthorized" });
       }
@@ -195,10 +275,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin product routes
-  app.patch("/api/admin/products/:id/stock", isAuthenticated, async (req: any, res) => {
+  app.patch("/api/admin/products/:id/stock", authMiddleware, async (req: any, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
+      const user = await storage.getUser(req.user.userId);
       if (!user?.isAdmin) {
         return res.status(403).json({ message: "Unauthorized" });
       }
@@ -227,9 +306,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/specials", isAuthenticated, async (req: any, res) => {
+  app.post("/api/specials", authMiddleware, async (req: any, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
+      const user = await storage.getUser(req.user.userId);
       if (!user?.isAdmin) {
         return res.status(403).json({ message: "Unauthorized" });
       }
@@ -254,9 +333,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/gallery", isAuthenticated, async (req: any, res) => {
+  app.post("/api/gallery", authMiddleware, async (req: any, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
+      const user = await storage.getUser(req.user.userId);
       if (!user?.isAdmin) {
         return res.status(403).json({ message: "Unauthorized" });
       }
@@ -271,7 +350,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Contact routes
-  app.post("/api/contact", isAuthenticated, async (req, res) => {
+  app.post("/api/contact", authMiddleware, async (req, res) => {
     try {
       const validatedData = insertContactMessageSchema.parse(req.body);
       const message = await storage.createContactMessage(validatedData);
@@ -282,9 +361,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/contact", isAuthenticated, async (req: any, res) => {
+  app.get("/api/admin/contact", authMiddleware, async (req: any, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
+      const user = await storage.getUser(req.user.userId);
       if (!user?.isAdmin) {
         return res.status(403).json({ message: "Unauthorized" });
       }
@@ -298,9 +377,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Staff routes
-  app.get("/api/admin/staff", isAuthenticated, async (req: any, res) => {
+  app.get("/api/admin/staff", authMiddleware, async (req: any, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
+      const user = await storage.getUser(req.user.userId);
       if (!user?.isAdmin) {
         return res.status(403).json({ message: "Unauthorized" });
       }
@@ -313,9 +392,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/staff", isAuthenticated, async (req: any, res) => {
+  app.post("/api/admin/staff", authMiddleware, async (req: any, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
+      const user = await storage.getUser(req.user.userId);
       if (!user?.isAdmin) {
         return res.status(403).json({ message: "Unauthorized" });
       }
@@ -328,9 +407,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/admin/staff/:id", isAuthenticated, async (req: any, res) => {
+  app.patch("/api/admin/staff/:id", authMiddleware, async (req: any, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
+      const user = await storage.getUser(req.user.userId);
       if (!user?.isAdmin) {
         return res.status(403).json({ message: "Unauthorized" });
       }
@@ -343,9 +422,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/admin/staff/:id", isAuthenticated, async (req: any, res) => {
+  app.delete("/api/admin/staff/:id", authMiddleware, async (req: any, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
+      const user = await storage.getUser(req.user.userId);
       if (!user?.isAdmin) {
         return res.status(403).json({ message: "Unauthorized" });
       }
@@ -359,9 +438,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Inventory routes
-  app.get("/api/admin/inventory", isAuthenticated, async (req: any, res) => {
+  app.get("/api/admin/inventory", authMiddleware, async (req: any, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
+      const user = await storage.getUser(req.user.userId);
       if (!user?.isAdmin) {
         return res.status(403).json({ message: "Unauthorized" });
       }
@@ -374,9 +453,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/inventory/low-stock", isAuthenticated, async (req: any, res) => {
+  app.get("/api/admin/inventory/low-stock", authMiddleware, async (req: any, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
+      const user = await storage.getUser(req.user.userId);
       if (!user?.isAdmin) {
         return res.status(403).json({ message: "Unauthorized" });
       }
@@ -389,9 +468,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/inventory", isAuthenticated, async (req: any, res) => {
+  app.post("/api/admin/inventory", authMiddleware, async (req: any, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
+      const user = await storage.getUser(req.user.userId);
       if (!user?.isAdmin) {
         return res.status(403).json({ message: "Unauthorized" });
       }
@@ -404,9 +483,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/admin/inventory/:id", isAuthenticated, async (req: any, res) => {
+  app.patch("/api/admin/inventory/:id", authMiddleware, async (req: any, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
+      const user = await storage.getUser(req.user.userId);
       if (!user?.isAdmin) {
         return res.status(403).json({ message: "Unauthorized" });
       }
@@ -419,9 +498,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/admin/inventory/:id", isAuthenticated, async (req: any, res) => {
+  app.delete("/api/admin/inventory/:id", authMiddleware, async (req: any, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
+      const user = await storage.getUser(req.user.userId);
       if (!user?.isAdmin) {
         return res.status(403).json({ message: "Unauthorized" });
       }
@@ -435,9 +514,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Customer routes
-  app.get("/api/admin/customers", isAuthenticated, async (req: any, res) => {
+  app.get("/api/admin/customers", authMiddleware, async (req: any, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
+      const user = await storage.getUser(req.user.userId);
       if (!user?.isAdmin) {
         return res.status(403).json({ message: "Unauthorized" });
       }
@@ -450,9 +529,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/customers/:id/orders", isAuthenticated, async (req: any, res) => {
+  app.get("/api/admin/customers/:id/orders", authMiddleware, async (req: any, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
+      const user = await storage.getUser(req.user.userId);
       if (!user?.isAdmin) {
         return res.status(403).json({ message: "Unauthorized" });
       }
@@ -466,9 +545,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Settings routes
-  app.get("/api/admin/settings", isAuthenticated, async (req: any, res) => {
+  app.get("/api/admin/settings", authMiddleware, async (req: any, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
+      const user = await storage.getUser(req.user.userId);
       if (!user?.isAdmin) {
         return res.status(403).json({ message: "Unauthorized" });
       }
@@ -486,9 +565,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/admin/settings", isAuthenticated, async (req: any, res) => {
+  app.patch("/api/admin/settings", authMiddleware, async (req: any, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
+      const user = await storage.getUser(req.user.userId);
       if (!user?.isAdmin) {
         return res.status(403).json({ message: "Unauthorized" });
       }
