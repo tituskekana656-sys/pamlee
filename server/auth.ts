@@ -1,4 +1,3 @@
-
 import { Express, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { authMiddleware, AuthRequest, JWT_SECRET } from './authMiddleware';
@@ -30,7 +29,7 @@ export function setupAuth(app: Express) {
 
       // Generate JWT token
       const token = jwt.sign(
-        { id: user.id, username: user.username, email: user.email },
+        { id: user.id, username: user.username, email: user.email, isAdmin: user.isAdmin || false },
         JWT_SECRET,
         { expiresIn: '7d' }
       );
@@ -73,7 +72,7 @@ export function setupAuth(app: Express) {
 
       // Generate JWT token
       const token = jwt.sign(
-        { id: user.id, username: user.username, email: user.email },
+        { id: user.id, username: user.username, email: user.email, isAdmin: user.isAdmin || false },
         JWT_SECRET,
         { expiresIn: '7d' }
       );

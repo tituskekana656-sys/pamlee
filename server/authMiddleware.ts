@@ -9,6 +9,7 @@ export interface AuthRequest extends Request {
     id: string;
     username: string;
     email: string;
+    isAdmin?: boolean;
   };
 }
 
@@ -24,7 +25,8 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
     req.user = {
       id: decoded.id,
       username: decoded.username,
-      email: decoded.email
+      email: decoded.email,
+      isAdmin: decoded.isAdmin || false
     };
     next();
   } catch (error) {

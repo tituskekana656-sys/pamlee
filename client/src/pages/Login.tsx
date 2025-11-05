@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { queryClient } from "@/lib/queryClient";
 
 export default function Login() {
   const [, setLocation] = useLocation();
@@ -37,12 +38,16 @@ export default function Login() {
         throw new Error(data.message || "Authentication failed");
       }
 
+      // Refresh the user data in the cache
+      await queryClient.invalidateQueries({ queryKey: ["user"] });
+
       toast({
         title: isLogin ? "Login successful" : "Account created",
         description: `Welcome${isLogin ? ' back' : ''}, ${data.user.username}!`,
       });
 
-      setLocation("/admin");
+      // Redirect to home page, not admin
+      setLocation("/");
     } catch (error: any) {
       toast({
         title: "Error",
