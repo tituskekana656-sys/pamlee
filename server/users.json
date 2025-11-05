@@ -11,6 +11,7 @@
     "username": "admin",
     "email": "titusmahlatsekekana@gmail.com",
     "password": "$2b$10$eqKz5bulLPF8LDNKx3bKU.Ym3wblVL/AWemg7PI.1ncLixI.0NQZu",
-    "createdAt": "2025-11-05T06:24:56.298Z"
+    "createdAt": "2025-11-05T06:24:56.298Z",
+    "isAdmin": true
   }
 ]

@@ -1,4 +1,3 @@
-
 import fs from 'fs/promises';
 import path from 'path';
 import bcrypt from 'bcryptjs';
@@ -44,7 +43,7 @@ export async function findUserById(id: string): Promise<User | undefined> {
 
 export async function createUser(username: string, email: string, password: string): Promise<User> {
   const users = await getUsers();
-  
+
   const hashedPassword = await bcrypt.hash(password, 10);
   const newUser: User = {
     id: Date.now().toString(),
@@ -53,20 +52,15 @@ export async function createUser(username: string, email: string, password: stri
     password: hashedPassword,
     createdAt: new Date().toISOString()
   };
-  
+
   users.push(newUser);
   await saveUsers(users);
-  
+
   return newUser;
 }
 
 export async function validatePassword(user: User, password: string): Promise<boolean> {
   return bcrypt.compare(password, user.password);
-}
-
-export function sanitizeUser(user: User) {
-  const { password, ...userWithoutPassword } = user;
-  return userWithoutPassword;
 }
 
 export function sanitizeUser(user: User) {
