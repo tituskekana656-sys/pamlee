@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Cookie, Clock, Award } from "lucide-react";
-import { Link } from "wouter";
+import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import heroImage from "@assets/generated_images/Bakery_hero_banner_background_7eafa9f9.png";
 import cakeImage from "@assets/generated_images/Chocolate_cake_product_photo_c49fbe2f.png";
@@ -9,13 +9,14 @@ import breadImage from "@assets/generated_images/Artisan_bread_product_photo_0b5
 
 export default function Landing() {
   const { isAuthenticated } = useAuth();
+  const [, setLocation] = useLocation();
 
   return (
     <div className="min-h-screen flex flex-col">
       {/* Hero Section */}
       <section className="relative min-h-[600px] md:min-h-[700px] flex items-center justify-center overflow-hidden">
         {/* Background Image with Overlay */}
-        <div 
+        <div
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url(${heroImage})` }}
         >
@@ -33,35 +34,35 @@ export default function Landing() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
             {!isAuthenticated ? (
               <>
-                <Link href="/login" data-testid="button-login-hero">
-                  <Button 
-                    size="lg" 
-                    className="bg-primary/90 backdrop-blur-md hover:bg-primary text-primary-foreground px-8 py-6 text-lg h-auto"
-                  >
-                    Login / Sign Up
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
-                </Link>
-                <Link href="/login" data-testid="button-admin-login">
-                  <Button 
-                    size="lg" 
-                    variant="outline"
-                    className="bg-white/10 backdrop-blur-md border-white/30 text-white hover:bg-white/20 px-8 py-6 text-lg h-auto"
-                  >
-                    Admin Login
-                  </Button>
-                </Link>
-              </>
-            ) : (
-              <Link href="/menu" data-testid="button-browse-menu">
-                <Button 
-                  size="lg" 
+                <Button
+                  size="lg"
                   className="bg-primary/90 backdrop-blur-md hover:bg-primary text-primary-foreground px-8 py-6 text-lg h-auto"
+                  onClick={() => setLocation('/login')}
+                  data-testid="button-login-hero"
                 >
-                  Browse Menu
+                  Login / Sign Up
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
-              </Link>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="bg-white/10 backdrop-blur-md border-white/30 text-white hover:bg-white/20 px-8 py-6 text-lg h-auto"
+                  onClick={() => setLocation('/login')}
+                  data-testid="button-admin-login"
+                >
+                  Admin Login
+                </Button>
+              </>
+            ) : (
+              <Button
+                size="lg"
+                className="bg-primary/90 backdrop-blur-md hover:bg-primary text-primary-foreground px-8 py-6 text-lg h-auto"
+                onClick={() => setLocation('/menu')}
+                data-testid="button-browse-menu"
+              >
+                Browse Menu
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
             )}
           </div>
         </div>
@@ -144,17 +145,24 @@ export default function Landing() {
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-12">
-            <Link href="/login" data-testid="button-login-cta">
-              <Button size="lg" className="px-8 py-6 text-lg h-auto">
-                Login to Browse Full Menu
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
-            <Link href="/login" data-testid="button-admin-login-cta">
-              <Button size="lg" variant="outline" className="px-8 py-6 text-lg h-auto">
-                Admin Login
-              </Button>
-            </Link>
+            <Button
+              size="lg"
+              className="px-8 py-6 text-lg h-auto"
+              onClick={() => setLocation('/login')}
+              data-testid="button-login-cta"
+            >
+              Login to Browse Full Menu
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="px-8 py-6 text-lg h-auto"
+              onClick={() => setLocation('/login')}
+              data-testid="button-admin-login-cta"
+            >
+              Admin Login
+            </Button>
           </div>
         </div>
       </section>
@@ -168,16 +176,16 @@ export default function Landing() {
           <p className="text-lg mb-8 opacity-90">
             Join our community and enjoy fresh, homemade baked goods delivered to your door
           </p>
-          <Link href="/login" data-testid="button-signup-cta">
-            <Button 
-              size="lg" 
-              variant="secondary"
-              className="px-8 py-6 text-lg h-auto"
-            >
-              Create Your Account
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-          </Link>
+          <Button
+            size="lg"
+            variant="secondary"
+            className="px-8 py-6 text-lg h-auto"
+            onClick={() => setLocation('/login')}
+            data-testid="button-signup-cta"
+          >
+            Create Your Account
+            <ArrowRight className="ml-2 h-5 w-5" />
+          </Button>
         </div>
       </section>
 
