@@ -10,9 +10,10 @@ interface NavbarProps {
 }
 
 export function Navbar({ cartItemCount = 0 }: NavbarProps) {
-  const [location] = useLocation();
-  const { user, isAuthenticated } = useAuth();
+  const [location, setLocation] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { user, logout, isAuthenticated } = useAuth();
+
 
   const navLinks = [
     { path: "/", label: "Home" },
@@ -28,18 +29,8 @@ export function Navbar({ cartItemCount = 0 }: NavbarProps) {
     navLinks.push({ path: "/admin", label: "Admin" });
   }
 
-  const handleLogout = async () => {
-    try {
-      await fetch("/api/auth/logout", {
-        method: "POST",
-        credentials: "include", // This might need adjustment based on how cookies/tokens are handled server-side
-      });
-      localStorage.removeItem("token"); // Remove the stored JWT
-      window.location.href = "/"; // Redirect to home or login page
-    } catch (error) {
-      console.error("Logout failed:", error);
-      // Optionally, handle error display to the user
-    }
+  const handleLogout = () => {
+    logout();
   };
 
 

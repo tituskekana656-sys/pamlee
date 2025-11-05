@@ -1,16 +1,63 @@
-// Following javascript_log_in_with_replit blueprint
-import { useQuery } from "@tanstack/react-query";
-import type { User } from "@shared/schema";
+
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
+
+interface User {
+  id: string;
+  username: string;
+  email: string;
+}
+
+async function fetchUser(): Promise<User | null> {
+  const response = await fetch("/api/auth/user", {
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      return null;
+    }
+    throw new Error("Failed to fetch user");
+  }
+
+  return response.json();
+}
+
+async function logout(): Promise<void> {
+  const response = await fetch("/api/auth/logout", {
+    method: "POST",
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    throw new Error("Logout failed");
+  }
+}
 
 export function useAuth() {
-  const { data: user, isLoading } = useQuery<User>({
-    queryKey: ["/api/auth/user"],
+  const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
+
+  const { data: user, isLoading, error } = useQuery<User | null>({
+    queryKey: ["user"],
+    queryFn: fetchUser,
     retry: false,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const logoutMutation = useMutation({
+    mutationFn: logout,
+    onSuccess: () => {
+      queryClient.setQueryData(["user"], null);
+      setLocation("/login");
+    },
   });
 
   return {
     user,
-    isLoading,
     isAuthenticated: !!user,
+    isLoading,
+    error,
+    logout: () => logoutMutation.mutate(),
   };
 }

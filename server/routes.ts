@@ -1,8 +1,8 @@
-
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { authMiddleware, generateToken, hashPassword, comparePassword } from "./auth";
+import { setupAuth } from "./auth";
+import { authMiddleware, type AuthRequest } from "./authMiddleware";
 import {
   insertProductSchema,
   insertOrderSchema,
@@ -12,6 +12,8 @@ import {
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  setupAuth(app);
+
   // Auth routes
   app.post('/api/auth/signup', async (req, res) => {
     try {
@@ -97,7 +99,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ message: "Logged out successfully" });
   });
 
-  app.get('/api/auth/user', authMiddleware, async (req: any, res) => {
+  app.get('/api/auth/user', authMiddleware, async (req: AuthRequest, res) => {
     try {
       const user = await storage.getUser(req.user.userId);
       if (!user) {
@@ -134,7 +136,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/products", authMiddleware, async (req: any, res) => {
+  app.post("/api/products", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const user = await storage.getUser(req.user.userId);
       if (!user?.isAdmin) {
@@ -150,7 +152,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/admin/products/:id", authMiddleware, async (req: any, res) => {
+  app.patch("/api/admin/products/:id", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const user = await storage.getUser(req.user.userId);
       if (!user?.isAdmin) {
@@ -165,7 +167,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/admin/products/:id", authMiddleware, async (req: any, res) => {
+  app.delete("/api/admin/products/:id", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const user = await storage.getUser(req.user.userId);
       if (!user?.isAdmin) {
@@ -181,16 +183,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Order routes
-  app.post("/api/orders", authMiddleware, async (req: any, res) => {
+  app.post("/api/orders", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const { items, ...orderData } = req.body;
-      
+
       if (!items || items.length === 0) {
         return res.status(400).json({ message: "Order must contain at least one item" });
       }
 
       const validatedOrder = insertOrderSchema.parse(orderData);
-      
+
       const validatedItems = items.map((item: any) => {
         const { orderId, ...itemData } = item;
         return itemData;
@@ -244,7 +246,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin order routes
-  app.get("/api/admin/orders", authMiddleware, async (req: any, res) => {
+  app.get("/api/admin/orders", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const user = await storage.getUser(req.user.userId);
       if (!user?.isAdmin) {
@@ -259,7 +261,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/admin/orders/:id/status", authMiddleware, async (req: any, res) => {
+  app.patch("/api/admin/orders/:id/status", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const user = await storage.getUser(req.user.userId);
       if (!user?.isAdmin) {
@@ -275,7 +277,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/admin/products/:id/stock", authMiddleware, async (req: any, res) => {
+  app.patch("/api/admin/products/:id/stock", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const user = await storage.getUser(req.user.userId);
       if (!user?.isAdmin) {
@@ -306,7 +308,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/specials", authMiddleware, async (req: any, res) => {
+  app.post("/api/specials", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const user = await storage.getUser(req.user.userId);
       if (!user?.isAdmin) {
@@ -333,7 +335,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/gallery", authMiddleware, async (req: any, res) => {
+  app.post("/api/gallery", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const user = await storage.getUser(req.user.userId);
       if (!user?.isAdmin) {
@@ -361,7 +363,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/contact", authMiddleware, async (req: any, res) => {
+  app.get("/api/admin/contact", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const user = await storage.getUser(req.user.userId);
       if (!user?.isAdmin) {
@@ -377,7 +379,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Staff routes
-  app.get("/api/admin/staff", authMiddleware, async (req: any, res) => {
+  app.get("/api/admin/staff", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const user = await storage.getUser(req.user.userId);
       if (!user?.isAdmin) {
@@ -392,7 +394,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/staff", authMiddleware, async (req: any, res) => {
+  app.post("/api/admin/staff", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const user = await storage.getUser(req.user.userId);
       if (!user?.isAdmin) {
@@ -407,7 +409,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/admin/staff/:id", authMiddleware, async (req: any, res) => {
+  app.patch("/api/admin/staff/:id", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const user = await storage.getUser(req.user.userId);
       if (!user?.isAdmin) {
@@ -422,7 +424,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/admin/staff/:id", authMiddleware, async (req: any, res) => {
+  app.delete("/api/admin/staff/:id", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const user = await storage.getUser(req.user.userId);
       if (!user?.isAdmin) {
@@ -438,7 +440,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Inventory routes
-  app.get("/api/admin/inventory", authMiddleware, async (req: any, res) => {
+  app.get("/api/admin/inventory", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const user = await storage.getUser(req.user.userId);
       if (!user?.isAdmin) {
@@ -453,7 +455,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/inventory/low-stock", authMiddleware, async (req: any, res) => {
+  app.get("/api/admin/inventory/low-stock", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const user = await storage.getUser(req.user.userId);
       if (!user?.isAdmin) {
@@ -468,7 +470,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/inventory", authMiddleware, async (req: any, res) => {
+  app.post("/api/admin/inventory", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const user = await storage.getUser(req.user.userId);
       if (!user?.isAdmin) {
@@ -483,7 +485,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/admin/inventory/:id", authMiddleware, async (req: any, res) => {
+  app.patch("/api/admin/inventory/:id", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const user = await storage.getUser(req.user.userId);
       if (!user?.isAdmin) {
@@ -498,7 +500,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/admin/inventory/:id", authMiddleware, async (req: any, res) => {
+  app.delete("/api/admin/inventory/:id", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const user = await storage.getUser(req.user.userId);
       if (!user?.isAdmin) {
@@ -514,7 +516,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Customer routes
-  app.get("/api/admin/customers", authMiddleware, async (req: any, res) => {
+  app.get("/api/admin/customers", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const user = await storage.getUser(req.user.userId);
       if (!user?.isAdmin) {
@@ -529,7 +531,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/customers/:id/orders", authMiddleware, async (req: any, res) => {
+  app.get("/api/admin/customers/:id/orders", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const user = await storage.getUser(req.user.userId);
       if (!user?.isAdmin) {
@@ -545,7 +547,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Settings routes
-  app.get("/api/admin/settings", authMiddleware, async (req: any, res) => {
+  app.get("/api/admin/settings", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const user = await storage.getUser(req.user.userId);
       if (!user?.isAdmin) {
@@ -565,7 +567,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/admin/settings", authMiddleware, async (req: any, res) => {
+  app.patch("/api/admin/settings", authMiddleware, async (req: AuthRequest, res) => {
     try {
       const user = await storage.getUser(req.user.userId);
       if (!user?.isAdmin) {
