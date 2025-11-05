@@ -11,13 +11,6 @@ export default function Landing() {
   const { isAuthenticated, user } = useAuth();
   const [, setLocation] = useLocation();
 
-  // This conditional redirect is added based on the user's message "please redirect me to the admin page".
-  // It assumes that if the user is authenticated and has an 'admin' role, they should be redirected.
-  // This is an interpretation to fulfill the user's explicit request.
-  if (isAuthenticated && user?.role === "admin") {
-    setLocation("/admin");
-  }
-
   return (
     <div className="min-h-screen flex flex-col">
       {/* Hero Section */}

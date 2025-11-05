@@ -138,8 +138,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/products", authMiddleware, async (req: AuthRequest, res) => {
     try {
-      const user = await storage.getUser(req.user.userId);
-      if (!user?.isAdmin) {
+      if (!req.user?.isAdmin) {
         return res.status(403).json({ message: "Unauthorized" });
       }
 
@@ -154,8 +153,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/admin/products/:id", authMiddleware, async (req: AuthRequest, res) => {
     try {
-      const user = await storage.getUser(req.user.userId);
-      if (!user?.isAdmin) {
+      if (!req.user?.isAdmin) {
         return res.status(403).json({ message: "Unauthorized" });
       }
 
@@ -169,8 +167,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/admin/products/:id", authMiddleware, async (req: AuthRequest, res) => {
     try {
-      const user = await storage.getUser(req.user.userId);
-      if (!user?.isAdmin) {
+      if (!req.user?.isAdmin) {
         return res.status(403).json({ message: "Unauthorized" });
       }
 
@@ -248,8 +245,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin order routes
   app.get("/api/admin/orders", authMiddleware, async (req: AuthRequest, res) => {
     try {
-      const user = await storage.getUser(req.user.userId);
-      if (!user?.isAdmin) {
+      if (!req.user?.isAdmin) {
         return res.status(403).json({ message: "Unauthorized" });
       }
 
@@ -263,8 +259,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/admin/orders/:id/status", authMiddleware, async (req: AuthRequest, res) => {
     try {
-      const user = await storage.getUser(req.user.userId);
-      if (!user?.isAdmin) {
+      if (!req.user?.isAdmin) {
         return res.status(403).json({ message: "Unauthorized" });
       }
 
@@ -279,8 +274,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/admin/products/:id/stock", authMiddleware, async (req: AuthRequest, res) => {
     try {
-      const user = await storage.getUser(req.user.userId);
-      if (!user?.isAdmin) {
+      if (!req.user?.isAdmin) {
         return res.status(403).json({ message: "Unauthorized" });
       }
 
@@ -381,8 +375,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Staff routes
   app.get("/api/admin/staff", authMiddleware, async (req: AuthRequest, res) => {
     try {
-      const user = await storage.getUser(req.user.userId);
-      if (!user?.isAdmin) {
+      if (!req.user?.isAdmin) {
         return res.status(403).json({ message: "Unauthorized" });
       }
 
@@ -396,8 +389,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/admin/staff", authMiddleware, async (req: AuthRequest, res) => {
     try {
-      const user = await storage.getUser(req.user.userId);
-      if (!user?.isAdmin) {
+      if (!req.user?.isAdmin) {
         return res.status(403).json({ message: "Unauthorized" });
       }
 
@@ -411,8 +403,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/admin/staff/:id", authMiddleware, async (req: AuthRequest, res) => {
     try {
-      const user = await storage.getUser(req.user.userId);
-      if (!user?.isAdmin) {
+      if (!req.user?.isAdmin) {
         return res.status(403).json({ message: "Unauthorized" });
       }
 
@@ -426,8 +417,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/admin/staff/:id", authMiddleware, async (req: AuthRequest, res) => {
     try {
-      const user = await storage.getUser(req.user.userId);
-      if (!user?.isAdmin) {
+      if (!req.user?.isAdmin) {
         return res.status(403).json({ message: "Unauthorized" });
       }
 
@@ -442,8 +432,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Inventory routes
   app.get("/api/admin/inventory", authMiddleware, async (req: AuthRequest, res) => {
     try {
-      const user = await storage.getUser(req.user.userId);
-      if (!user?.isAdmin) {
+      if (!req.user?.isAdmin) {
         return res.status(403).json({ message: "Unauthorized" });
       }
 
@@ -457,8 +446,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/admin/inventory/low-stock", authMiddleware, async (req: AuthRequest, res) => {
     try {
-      const user = await storage.getUser(req.user.userId);
-      if (!user?.isAdmin) {
+      if (!req.user?.isAdmin) {
         return res.status(403).json({ message: "Unauthorized" });
       }
 
@@ -472,8 +460,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/admin/inventory", authMiddleware, async (req: AuthRequest, res) => {
     try {
-      const user = await storage.getUser(req.user.userId);
-      if (!user?.isAdmin) {
+      if (!req.user?.isAdmin) {
         return res.status(403).json({ message: "Unauthorized" });
       }
 
@@ -487,8 +474,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/admin/inventory/:id", authMiddleware, async (req: AuthRequest, res) => {
     try {
-      const user = await storage.getUser(req.user.userId);
-      if (!user?.isAdmin) {
+      if (!req.user?.isAdmin) {
         return res.status(403).json({ message: "Unauthorized" });
       }
 
@@ -502,8 +488,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/admin/inventory/:id", authMiddleware, async (req: AuthRequest, res) => {
     try {
-      const user = await storage.getUser(req.user.userId);
-      if (!user?.isAdmin) {
+      if (!req.user?.isAdmin) {
         return res.status(403).json({ message: "Unauthorized" });
       }
 
@@ -518,8 +503,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Customer routes
   app.get("/api/admin/customers", authMiddleware, async (req: AuthRequest, res) => {
     try {
-      const user = await storage.getUser(req.user.userId);
-      if (!user?.isAdmin) {
+      if (!req.user?.isAdmin) {
         return res.status(403).json({ message: "Unauthorized" });
       }
 
